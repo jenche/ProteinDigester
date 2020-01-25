@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import MutableMapping, Iterable, TypeVar
+from typing import MutableMapping, Iterable, TypeVar, Optional
 
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QFileDialog, QCheckBox, QWidget, QMessageBox
@@ -22,7 +22,7 @@ def _dismissableMessage(parent: QWidget,
 
     message_box = QMessageBox(icon, 'Protein Digester', message, buttons, parent)
     checkbox = QCheckBox(message_box)
-    checkbox.setText('Ne plus montrer ce message')
+    checkbox.setText('Don\'t warn again')
     message_box.setCheckBox(checkbox)
     button = message_box.exec()
 
@@ -104,7 +104,11 @@ def fileOpenDialog(parent: QWidget, title: str, folder: str = '', filter: str = 
     return Path(path) if path else None
 
 
-def fileSaveDialog(parent: QWidget, title: str, folder: str = '', filter: str = '', extension: str = '') -> Path:
+def fileSaveDialog(parent: QWidget,
+                   title: str,
+                   folder: str = '',
+                   filter: str = '',
+                   extension: str = '') -> Optional[Path]:
     path = QFileDialog.getSaveFileName(parent, title, folder, filter)[0]
 
     if not path:
