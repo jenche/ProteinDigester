@@ -1,0 +1,31 @@
+<RCC>
+  <qresource prefix="/pixmap">
+    <file>splash/splash.png</file>
+    <file>icons/96x96/applications-science.png</file>
+    <file>icons/32x32/mail-unread.png</file>
+    <file>icons/24x24/list-add.png</file>
+    <file>icons/24x24/list-remove.png</file>
+    <file>icons/24x24/view-refresh.png</file>
+    <file>icons/24x24/dialog-error.png</file>
+    <file>icons/16x16/mail-read.png</file>
+    <file>icons/16x16/mail-unread.png</file>
+    <file>icons/16x16/user-offline.png</file>
+    <file>icons/16x16/user-invisible.png</file>
+    <file>icons/16x16/emblem-important.png</file>
+    <file>icons/16x16/document-properties.png</file>
+    <file>icons/16x16/emblem-documents.png</file>
+    <file>icons/16x16/user-trash.png</file>
+    <file>icons/16x16/dialog-warning.png</file>
+    <file>icons/16x16/emblem-default.png</file>
+    <file>icons/16x16/dialog-error.png</file>
+    <file>icons/16x16/window-close.png</file>
+    <file>icons/16x16/document-new.png</file>
+    <file>icons/16x16/edit-find-replace-symbolic.symbolic.png</file>
+    <file>icons/16x16/edit-find-symbolic.symbolic.png</file>
+    <file>icons/16x16/user-available.png</file>
+    <file>icons/16x16/user-invisible.png</file>
+    <file>icons/16x16/user-invisible.png</file>
+    <file>loaders/24x24/flowing-gradient.gif</file>
+    <file>loaders/16x16/flowing-gradient.gif</file>
+  </qresource>
+</RCC>
