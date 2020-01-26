@@ -21,7 +21,7 @@ class DigestionDoesntExistError(Exception):
     pass
 
 
-class ActionCancelledError(Exception):
+class ResultsLimitExceededError(Exception):
     pass
 
 
@@ -129,7 +129,10 @@ class DigestionDatabase:
             raise RuntimeError('No database is opened')
 
         cursor = self._connection.execute('SELECT enzyme, missed_cleavages FROM digestions')
-        return tuple(DigestionSettings(row['enzyme'], row['missed_cleavages']) for row in cursor)
+        available_digestions = [DigestionSettings(row['enzyme'], row['missed_cleavages']) for row in cursor]
+        available_digestions.sort(key=lambda digestion: digestion.missed_cleavages)
+        available_digestions.sort(key=lambda digestion: digestion.enzyme)
+        return tuple(available_digestions)
 
     @property
     def proteins_count(self) -> int:
@@ -278,16 +281,28 @@ class DigestionDatabase:
                 self._current_task_iteration += 1
             rows = read_cursor.fetchmany(proteins_per_batch)
 
-    def remove_digestion(self, enzyme: str, missed_cleavages: int) -> None:
-        digestion_tables_name = self._digestion_tables(enzyme, missed_cleavages)
+    def remove_digestion(self, enzyme: str, missed_cleavages: int, callback: Optional[Callable] = None) -> None:
+        self._progress_handler_function = callback
+        self._current_task_iteration = 0
+        self._maximum_task_iteration = 0
+        self._current_task = 'Removing digestion...'
+        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
 
         with self._connection:
-            self._connection.execute(f'DROP TABLE {digestion_tables_name.peptides_table}')
-            self._connection.execute(f'DROP TABLE {digestion_tables_name.peptides_association}')
+            # self._digestion_tables returns table names surrounded by ", we need to remove them in this case
             self._connection.execute('DELETE FROM digestions WHERE peptides_table = ?',
-                                     (digestion_tables_name.peptides_table,))
+                                     (digestion_tables.peptides_table[1:-1],))
+            self._connection.execute(f'DROP TABLE {digestion_tables.peptides_table}')
+            self._connection.execute(f'DROP TABLE {digestion_tables.peptides_association}')
 
-    def search_proteins_by_name(self, name: str, callback=None) -> Optional[Iterator[Protein]]:
+        # VACUUM command is issued to shrink the database
+        self._connection.execute('VACUUM')
+        self._end_of_task()
+
+    def search_proteins_by_name(self,
+                                name: str,
+                                limit: Optional[int] = None,
+                                callback=None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
         self._current_task_iteration = 0
         self._maximum_task_iteration = 0
@@ -299,16 +314,21 @@ class DigestionDatabase:
 
         try:
             cursor = self._connection.execute(sql, ('%' + name.strip() + '%',))
-            for row in cursor:
+            for i, row in enumerate(cursor, start=1):
                 yield Protein(row['id'], row['name'], row['sequence'])
+
+                if limit is not None and i + 1 > limit:
+                    self._end_of_task()
+                    raise ResultsLimitExceededError
         except sqlite3.OperationalError:
             pass
 
         self._end_of_task()
 
-    def search_protein_by_sequence(self,
-                                   sequence: str,
-                                   callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
+    def search_proteins_by_sequence(self,
+                                    sequence: str,
+                                    limit: Optional[int] = None,
+                                    callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0
@@ -320,18 +340,23 @@ class DigestionDatabase:
 
         try:
             cursor = self._connection.execute(sql, ('%' + sequence.strip().upper() + '%',))
-            for row in cursor:
+            for i, row in enumerate(cursor, start=1):
                 yield Protein(row['id'], row['name'], row['sequence'])
+
+                if limit is not None and i + 1 > limit:
+                    self._end_of_task()
+                    raise ResultsLimitExceededError
         except sqlite3.OperationalError:
             pass
 
         self._end_of_task()
 
-    def search_proteins_by_peptide(self,
-                                   peptide_id: int,
-                                   enzyme: str,
-                                   missed_cleavages: int,
-                                   callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
+    def search_proteins_by_peptide_id(self,
+                                      peptide_id: int,
+                                      enzyme: str,
+                                      missed_cleavages: int,
+                                      limit:Optional[int]=None,
+                                      callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0
@@ -345,18 +370,55 @@ class DigestionDatabase:
 
         try:
             cursor = self._connection.execute(sql, (peptide_id,))
-            for row in cursor:
+            for i, row in enumerate(cursor, start=1):
                 yield Protein(row['id'], row['name'], row['sequence'])
+
+                if limit is not None and i + 1 > limit:
+                    self._end_of_task()
+                    raise ResultsLimitExceededError
         except sqlite3.OperationalError:
             pass
 
         self._end_of_task()
 
-    def search_peptides_by_protein(self,
-                                   protein_id: int,
-                                   enzyme: str,
-                                   missed_cleavages: int,
-                                   callback: Optional[Callable] = None) -> Optional[Iterator[Peptide]]:
+    def search_proteins_by_peptide_sequence(self,
+                                            peptide_sequence: str,
+                                            enzyme: str,
+                                            missed_cleavages: int,
+                                            limit:Optional[int]=None,
+                                            callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
+        self._progress_handler_function = callback
+        self._maximum_task_iteration = 0
+        self._current_task_iteration = 0
+        self._current_task = 'Searching proteins by peptide...'
+        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
+
+        sql = f'''SELECT proteins.id, proteins.name, sequences.sequence FROM {digestion_tables.peptides_table}
+                  INNER JOIN {digestion_tables.peptides_association} ON 
+                  {digestion_tables.peptides_association}.peptide_id = {digestion_tables.peptides_table}.id
+                  INNER JOIN sequences ON sequences.id = {digestion_tables.peptides_association}.sequence_id
+                  INNER JOIN proteins ON proteins.sequence_id = {digestion_tables.peptides_association}.sequence_id
+                  WHERE {digestion_tables.peptides_table}.sequence = ? ORDER BY proteins.name'''
+
+        try:
+            cursor = self._connection.execute(sql, (peptide_sequence.strip().upper(),))
+            for i, row in enumerate(cursor, start=1):
+                yield Protein(row['id'], row['name'], row['sequence'])
+
+                if limit is not None and i + 1 > limit:
+                    self._end_of_task()
+                    raise ResultsLimitExceededError
+        except sqlite3.OperationalError:
+            pass
+
+        self._end_of_task()
+
+    def search_peptides_by_protein_id(self,
+                                      protein_id: int,
+                                      enzyme: str,
+                                      missed_cleavages: int,
+                                      limit: Optional[int] = None,
+                                      callback: Optional[Callable] = None) -> Optional[Iterator[Peptide]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0
@@ -377,8 +439,12 @@ class DigestionDatabase:
 
         try:
             cursor = self._connection.execute(sql, (protein_id,))
-            for row in cursor:
+            for i, row in enumerate(cursor, start=1):
                 yield Peptide(row['id'], row['sequence'], row['missed_cleavages'], bool(row['is_unique']))
+
+                if limit is not None and i + 1 > limit:
+                    self._end_of_task()
+                    raise ResultsLimitExceededError
         except sqlite3.OperationalError:
             pass
 

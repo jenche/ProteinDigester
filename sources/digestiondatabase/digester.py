@@ -8,8 +8,8 @@ class InvalidEnzymeError(Exception):
 
 _enzymes = {
     'Arg-C': re.compile(r'R'),
-    'Asp-C': re.compile(r'\w(?=BD)'),
-    'Asp-N_ambic': re.compile(r'\w(?=DE)'),
+    'Asp-C': re.compile(r'\w(?=[BD])'),
+    'Asp-N_ambic': re.compile(r'\w(?=[DE])'),
     'Chymotrypsin': re.compile(r'([FLYW](?=[^P]))'),
     'CNbr': re.compile(r'M'),
     'CNbr+Trypsin': re.compile(r'(M)|([KR](?=[^P]))'),

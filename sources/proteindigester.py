@@ -1,15 +1,15 @@
 import sys
 import traceback
+from typing import List
 
 from PySide2.QtCore import Qt
-from PySide2.QtGui import QPixmap
-from PySide2.QtWidgets import QApplication, QStyle, QDesktopWidget, QSplashScreen
-from ui.dialogs.mainwindow import MainWindow
+from PySide2.QtWidgets import QApplication, QStyle, QDesktopWidget
 
 from ui.dialogs import commondialog
-from typing import List
+from ui.dialogs.mainwindow import MainWindow
+
 APP_NAME = 'Protein Digester'
-APP_VERSION = 1
+APP_VERSION = 0.1
 
 
 class Application(QApplication):
@@ -23,24 +23,14 @@ class Application(QApplication):
         self.setApplicationName(APP_NAME)
 
         use_gui_exception = True
-        show_splash = True
 
         for arg in argv:
             if arg in ('--stdout-exception', '-e'):
                 use_gui_exception = False
 
-            if arg in ('--nosplash', '-n'):
-                show_splash = False
-
         # If --stdout-exception is not passed as argument, exception are shown in a dialog
         if use_gui_exception:
             sys.excepthook = self._exceptionOccured
-
-        # Showing splash screen
-        if show_splash:
-            splash_screen = QSplashScreen(QPixmap(':/pixmap/splash/splash.png'))
-            splash_screen.show()
-            self.processEvents()
 
         # Deactivating the ? button appearing on every windows
         self.setAttribute(Qt.AA_DisableWindowContextHelpButton)
@@ -53,9 +43,6 @@ class Application(QApplication):
                                                         QDesktopWidget().availableGeometry(self._mainwindow)))
 
         self._mainwindow.show()
-
-        if show_splash:
-            splash_screen.finish(self._mainwindow)
 
     def _exceptionOccured(self, etype, value, trace) -> None:
         commondialog.detailedErrorMessage(self._mainwindow,

@@ -3,9 +3,10 @@ from typing import Optional
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QGuiApplication
-from PySide2.QtWidgets import QLabel, QProgressDialog, QTableWidgetItem, QHeaderView, QAction, QActionGroup
+from PySide2.QtWidgets import QLabel, QProgressDialog, QTableWidgetItem, QHeaderView, QAction, QActionGroup, QMessageBox
 
-from digestiondatabase.digestiondatabase import DigestionDatabase, DigestionAlreadyExistsError
+from digestiondatabase.digestiondatabase import (DigestionDatabase, DigestionAlreadyExistsError,
+                                                 ResultsLimitExceededError)
 from ui import uibuilder
 from ui.dialogs import commondialog
 from ui.dialogs.digestiondialog import DigestionDialog
@@ -52,6 +53,10 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         self._progress_dialog.setMinimumDuration(200)
         self._progress_dialog.reset()
 
+        # Creating menu that can't be created in QT Designer
+        self.removeDigestionMenu = self.databaseMenu.addMenu('Remove digestion')
+        self.removeDigestionMenu.triggered.connect(self.removeDigestionMenuActionTriggered)
+
         # First refresh
         self.refreshMenusButtonsStatusBar()
 
@@ -86,31 +91,43 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         self.mainSplitterBottomWidget.setVisible(digestions_available)
         self.databaseMenu.setEnabled(database_opened)
         self.workingDigestionMenu.setEnabled(digestions_available)
+        self.removeDigestionMenu.setEnabled(digestions_available)
 
         if digestions_available:
             current_digestion_settings = None
+            new_digestion_settings = None
+
             for action in self.workingDigestionMenu.actions():
                 if action.isChecked():
                     current_digestion_settings = action.data()
                     break
 
+            self.removeDigestionMenu.clear()
             self.workingDigestionMenu.clear()
             action_group = QActionGroup(self.workingDigestionMenu)
-            sorted_digestions = list(self.database.available_digestions)
-            sorted_digestions.sort(key=lambda x: x.missed_cleavages)
-            sorted_digestions.sort(key=lambda x: x.enzyme)
 
-            for i, digestion in enumerate(sorted_digestions):
-                action = QAction(f'{digestion.enzyme} - {digestion.missed_cleavages} missed cleavage'
-                                 f'{"s" if digestion.missed_cleavages > 0 else ""}',
-                                 action_group)
+            for i, digestion in enumerate(self.database.available_digestions):
+                action_title = (f'{digestion.enzyme} - {digestion.missed_cleavages} missed cleavage'
+                                f'{"s" if digestion.missed_cleavages > 1 else ""}')
+
+                # Adding action to working digestion menu
+                action = QAction(action_title, action_group)
                 action.setCheckable(True)
                 action.setData(digestion)
                 self.workingDigestionMenu.addAction(action)
-                action.setChecked(digestion == current_digestion_settings or not i)
 
-            for action in self.workingDigestionMenu.actions():
-                action.toggled.connect(self.workingDigestionMenuActionToggled)
+                if digestion == current_digestion_settings or not i:
+                    new_digestion_settings = digestion
+                    action.setChecked(True)
+
+                # Adding action to remove digestion menu
+                action = QAction(action_title, self.removeDigestionMenu)
+                action.setData(digestion)
+                self.removeDigestionMenu.addAction(action)
+
+            # Refreshing if needed
+            if current_digestion_settings != new_digestion_settings:
+                self.refreshPeptidesTableWidget()
 
     def refreshProteinsTableWidget(self) -> None:
         search_text = self.proteinsSearchLineEdit.text().strip()
@@ -118,16 +135,34 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         if not search_text:
             return
 
-        search_functions = (self._database.search_proteins_by_name,
-                            self._database.search_protein_by_sequence,
-                            None)
+        search_mode = self.proteinsSearchTypeComboBox.currentIndex()
 
-        results = search_functions[self.proteinsSearchTypeComboBox.currentIndex()](search_text, self._progressCallback)
+        if search_mode == 0:
+            results = self._database.search_proteins_by_name(search_text,
+                                                             limit=10000,
+                                                             callback=self._progressCallback)
+        elif search_mode == 1:
+            results = self._database.search_proteins_by_sequence(search_text,
+                                                                 limit=10000,
+                                                                 callback=self._progressCallback)
+        elif search_mode == 2:
+            for action in self.workingDigestionMenu.actions():
+                if action.isChecked():
+                    digestion_settings = action.data()
+                    break
 
-        if results:
-            self.proteinsTableWidget.setRowCount(0)
-            self.proteinsTableWidget.setSortingEnabled(False)
+            results = self._database.search_proteins_by_peptide_sequence(search_text,
+                                                                         digestion_settings.enzyme,
+                                                                         digestion_settings.missed_cleavages,
+                                                                         limit=10000,
+                                                                         callback=self._progressCallback)
+        else:
+            raise ValueError
 
+        self.proteinsTableWidget.setRowCount(0)
+        self.proteinsTableWidget.setSortingEnabled(False)
+
+        try:
             for i, protein in enumerate(results):
                 self.proteinsTableWidget.insertRow(i)
                 index_item = QTableWidgetItem(str(i + 1).zfill(5))
@@ -136,12 +171,11 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                 self.proteinsTableWidget.setItem(i, 0, index_item)
                 self.proteinsTableWidget.setItem(i, 1, name_item)
 
-                if i > 10000:
-                    commondialog.informationMessage(self,
-                                                    'Your search returns too much proteins.\n'
-                                                    'Only the 10000 first results will be displayed.',
-                                                    dismissable=True)
-                    break
+        except ResultsLimitExceededError:
+            commondialog.informationMessage(self,
+                                            'Your search returns too much results.\n'
+                                            'Only the 10000 first results will be displayed.',
+                                            dismissable=True)
 
         self.proteinsTableWidget.setSortingEnabled(True)
         self.proteinsTableWidget.resizeColumnToContents(-1)
@@ -149,41 +183,43 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
     def refreshPeptidesTableWidget(self) -> None:
         selected_items = self.proteinsTableWidget.selectedItems()
         selected_protein_id = selected_items[0].data(TableItemDataRole.ROW_OBJECT_ID) if selected_items else None
+        digestion_settings = None
 
         for action in self.workingDigestionMenu.actions():
             if action.isChecked():
                 digestion_settings = action.data()
                 break
 
-        if selected_protein_id:
-            results = self.database.search_peptides_by_protein(selected_protein_id,
-                                                               digestion_settings.enzyme,
-                                                               digestion_settings.missed_cleavages,
-                                                               callback=self._progressCallback)
+        if selected_protein_id and digestion_settings:
+            results = self.database.search_peptides_by_protein_id(selected_protein_id,
+                                                                  digestion_settings.enzyme,
+                                                                  digestion_settings.missed_cleavages,
+                                                                  limit=10000,
+                                                                  callback=self._progressCallback)
         else:
             results = []
 
         self.peptidesTableWidget.setRowCount(0)
         self.peptidesTableWidget.setSortingEnabled(False)
 
-        for i, peptide in enumerate(results):
-            self.peptidesTableWidget.insertRow(i)
-            index_item = QTableWidgetItem(str(i + 1).zfill(5))
-            index_item.setData(TableItemDataRole.ROW_OBJECT_ID, peptide.id)
-            sequence_item = QTableWidgetItem(peptide.sequence)
-            missed_cleavages_item = QTableWidgetItem(str(peptide.missed_cleavages))
-            unique_item = QTableWidgetItem('Yes' if peptide.is_unique else 'No')
-            self.peptidesTableWidget.setItem(i, 0, index_item)
-            self.peptidesTableWidget.setItem(i, 1, sequence_item)
-            self.peptidesTableWidget.setItem(i, 2, missed_cleavages_item)
-            self.peptidesTableWidget.setItem(i, 3, unique_item)
+        try:
+            for i, peptide in enumerate(results):
+                self.peptidesTableWidget.insertRow(i)
+                index_item = QTableWidgetItem(str(i + 1).zfill(5))
+                index_item.setData(TableItemDataRole.ROW_OBJECT_ID, peptide.id)
+                sequence_item = QTableWidgetItem(peptide.sequence)
+                missed_cleavages_item = QTableWidgetItem(str(peptide.missed_cleavages))
+                unique_item = QTableWidgetItem('Yes' if peptide.is_unique else 'No')
+                self.peptidesTableWidget.setItem(i, 0, index_item)
+                self.peptidesTableWidget.setItem(i, 1, sequence_item)
+                self.peptidesTableWidget.setItem(i, 2, missed_cleavages_item)
+                self.peptidesTableWidget.setItem(i, 3, unique_item)
 
-            if i > 10000:
-                commondialog.informationMessage(self,
-                                                'Your search returns too much peptides.\n'
-                                                'Only the 10000 first results will be displayed.',
-                                                dismissable=True)
-                break
+        except ResultsLimitExceededError:
+            commondialog.informationMessage(self,
+                                            'Your search returns too much results.\n'
+                                            'Only the 10000 first results will be displayed.',
+                                            dismissable=True)
 
         self.peptidesTableWidget.setSortingEnabled(True)
         self.proteinsTableWidget.resizeColumnToContents(-1)
@@ -192,25 +228,24 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         selected_items = self.peptidesTableWidget.selectedItems()
         selected_peptide_id = selected_items[0].data(TableItemDataRole.ROW_OBJECT_ID) if selected_items else None
 
-        print(selected_peptide_id)
-
         for action in self.workingDigestionMenu.actions():
             if action.isChecked():
                 digestion_settings = action.data()
                 break
 
         if selected_peptide_id:
-            results = self.database.search_proteins_by_peptide(selected_peptide_id,
-                                                               digestion_settings.enzyme,
-                                                               digestion_settings.missed_cleavages,
-                                                               callback=self._progressCallback)
+            results = self.database.search_proteins_by_peptide_id(selected_peptide_id,
+                                                                  digestion_settings.enzyme,
+                                                                  digestion_settings.missed_cleavages,
+                                                                  limit=10000,
+                                                                  callback=self._progressCallback)
         else:
             results = []
 
-        if results:
-            self.subProteinsTableWidget.setRowCount(0)
-            self.subProteinsTableWidget.setSortingEnabled(False)
+        self.subProteinsTableWidget.setRowCount(0)
+        self.subProteinsTableWidget.setSortingEnabled(False)
 
+        try:
             for i, protein in enumerate(results):
                 self.subProteinsTableWidget.insertRow(i)
                 index_item = QTableWidgetItem(str(i + 1).zfill(5))
@@ -219,12 +254,11 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                 self.subProteinsTableWidget.setItem(i, 0, index_item)
                 self.subProteinsTableWidget.setItem(i, 1, name_item)
 
-                if i > 10000:
-                    commondialog.informationMessage(self,
-                                                    'Your search returns too much proteins.\n'
-                                                    'Only the 10000 first results will be displayed.',
-                                                    dismissable=True)
-                    break
+        except ResultsLimitExceededError:
+            commondialog.informationMessage(self,
+                                            'Your search returns too much results.\n'
+                                            'Only the 10000 first results will be displayed.',
+                                            dismissable=True)
 
         self.subProteinsTableWidget.setSortingEnabled(True)
         self.subProteinsTableWidget.resizeColumnToContents(-1)
@@ -275,7 +309,16 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
             self.refreshMenusButtonsStatusBar()
 
-    def workingDigestionMenuActionToggled(self) -> None:
+    def removeDigestionMenuActionTriggered(self, action) -> None:
+        digestion = action.data()
+        if commondialog.questionMessage(self,
+                                        f'Are you sure you want to remove the digestion '
+                                        f'{digestion.enzyme} - {digestion.missed_cleavages} missed cleavages'
+                                        f'{"s" if digestion.missed_cleavages > 1 else ""} ?'):
+            self._database.remove_digestion(digestion.enzyme, digestion.missed_cleavages, self._progressCallback)
+            self.refreshMenusButtonsStatusBar()
+
+    def workingDigestionMenuActionTriggered(self, action) -> None:
         self.refreshPeptidesTableWidget()
 
     def proteinsSearchPushButtonClicked(self) -> None:
@@ -287,3 +330,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
     def peptidesTableWidgetItemSelectionChanged(self) -> None:
         self.refreshSubProteinsTableWidget()
 
+    def aboutActionTriggered(self) -> None:
+        QMessageBox.about(self,
+                          'About',
+                          f'{QGuiApplication.applicationName()} {QGuiApplication.applicationVersion()}')

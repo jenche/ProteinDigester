@@ -14,7 +14,7 @@
    <string>Protein Digester</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/resources.qrc">
+   <iconset>
     <normaloff>:/pixmap/icons/96x96/applications-science.png</normaloff>:/pixmap/icons/96x96/applications-science.png</iconset>
   </property>
   <property name="windowOpacity">
@@ -457,6 +457,7 @@
      <string>Digestion database</string>
     </property>
     <addaction name="importFastaAction"/>
+    <addaction name="separator"/>
     <addaction name="addDigestionAction"/>
    </widget>
    <widget class="QMenu" name="workingDigestionMenu">
@@ -464,9 +465,16 @@
      <string>Working digestion</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="aboutAction"/>
+   </widget>
    <addaction name="fileMenu"/>
    <addaction name="databaseMenu"/>
    <addaction name="workingDigestionMenu"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="createDatabaseAction">
@@ -501,6 +509,19 @@
   <action name="addDigestionAction">
    <property name="text">
     <string>Add digestion</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="removeDigestionAction">
+   <property name="text">
+    <string>Remove digestion</string>
+   </property>
+  </action>
+  <action name="aboutAction">
+   <property name="text">
+    <string>About ProteinDigester</string>
    </property>
   </action>
  </widget>
@@ -652,6 +673,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>aboutAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>aboutActionTriggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>611</x>
+     <y>344</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>createDatabaseActionTriggered()</slot>
@@ -661,5 +698,7 @@
   <slot>addDigestionActionTriggered()</slot>
   <slot>proteinsTableWidgetItemSelectionChanged()</slot>
   <slot>peptidesTableWidgetItemSelectionChanged()</slot>
+  <slot>workingDigestionMenuActionTriggered(QAction*)</slot>
+  <slot>aboutActionTriggered()</slot>
  </slots>
 </ui>
