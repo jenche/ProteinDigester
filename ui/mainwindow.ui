@@ -11,11 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Protein Digester</string>
-  </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>:/pixmap/icons/96x96/applications-science.png</normaloff>:/pixmap/icons/96x96/applications-science.png</iconset>
+   <string>ProteinDigester</string>
   </property>
   <property name="windowOpacity">
    <double>1.000000000000000</double>
