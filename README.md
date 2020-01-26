@@ -1,7 +1,7 @@
 # ProteinDigester
 ProteinDigester is a small tool created to import and digest FASTA database. Once digested, it makes it possible to quickly determine which petpides are proteotypic and if they are not, from what other proteins they can be obtained.
 # Requirements
-To run ProteinDigester, you'll need Python (>=3.7) and Pyside2.
+ProteinDigester has not been packaged yet. To run it, you'll need Python (>=3.7) and PySide2. Then, run **`proteindigester.py`** script.
 # Quick guide
 - Launch ProteinDigester
 - Create a digestion database (Ctrl+N)
