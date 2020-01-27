@@ -152,8 +152,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                     break
 
             results = self._database.search_proteins_by_peptide_sequence(search_text,
-                                                                         digestion_settings.enzyme,
-                                                                         digestion_settings.missed_cleavages,
+                                                                         digestion_settings,
                                                                          limit=10000,
                                                                          callback=self._progressCallback)
         else:
@@ -192,8 +191,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
         if selected_protein_id and digestion_settings:
             results = self.database.search_peptides_by_protein_id(selected_protein_id,
-                                                                  digestion_settings.enzyme,
-                                                                  digestion_settings.missed_cleavages,
+                                                                  digestion_settings,
                                                                   limit=10000,
                                                                   callback=self._progressCallback)
         else:
@@ -209,7 +207,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                 index_item.setData(TableItemDataRole.ROW_OBJECT_ID, peptide.id)
                 sequence_item = QTableWidgetItem(peptide.sequence)
                 missed_cleavages_item = QTableWidgetItem(str(peptide.missed_cleavages))
-                unique_item = QTableWidgetItem('Yes' if peptide.is_unique else 'No')
+                unique_item = QTableWidgetItem('Yes' if peptide.unique else 'No')
                 self.peptidesTableWidget.setItem(i, 0, index_item)
                 self.peptidesTableWidget.setItem(i, 1, sequence_item)
                 self.peptidesTableWidget.setItem(i, 2, missed_cleavages_item)
@@ -235,8 +233,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
         if selected_peptide_id:
             results = self.database.search_proteins_by_peptide_id(selected_peptide_id,
-                                                                  digestion_settings.enzyme,
-                                                                  digestion_settings.missed_cleavages,
+                                                                  digestion_settings,
                                                                   limit=10000,
                                                                   callback=self._progressCallback)
         else:
@@ -301,9 +298,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
         if digestion_settings:
             try:
-                self._database.add_digestion(digestion_settings.enzyme,
-                                             digestion_settings.missed_cleavages,
-                                             callback=self._progressCallback)
+                self._database.add_digestion(digestion_settings, callback=self._progressCallback)
             except DigestionAlreadyExistsError:
                 commondialog.errorMessage(self, 'This digestion already exists in the database.')
 
@@ -315,7 +310,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                                         f'Are you sure you want to remove the digestion '
                                         f'{digestion.enzyme} - {digestion.missed_cleavages} missed cleavages'
                                         f'{"s" if digestion.missed_cleavages > 1 else ""} ?'):
-            self._database.remove_digestion(digestion.enzyme, digestion.missed_cleavages, self._progressCallback)
+            self._database.remove_digestion(digestion, self._progressCallback)
             self.refreshMenusButtonsStatusBar()
 
     def workingDigestionMenuActionTriggered(self, action) -> None:

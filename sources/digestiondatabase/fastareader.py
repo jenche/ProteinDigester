@@ -1,11 +1,15 @@
 from pathlib import Path
-from typing import Tuple
+from typing import Iterator, Optional, Callable, Union
+
+from .protein import Protein
+
 
 class ReadCancelledError(Exception):
     pass
 
-def read(filename, callback=None) -> Tuple[str, str]:
-    def handle_callback():
+
+def read(filename: Union[Path, str], callback: Optional[Callable] = None) -> Iterator[Protein]:
+    def handle_callback() -> bool:
         if callback:
             return callback(position, filesize)
         else:
@@ -30,7 +34,7 @@ def read(filename, callback=None) -> Tuple[str, str]:
 
             if line[0] == '>':
                 if lines_buffer:
-                    yield lines_buffer[0], ''.join(lines_buffer[1:])
+                    yield Protein(lines_buffer[0], ''.join(lines_buffer[1:]))
                     lines_buffer.clear()
 
                     if handle_callback():
@@ -41,6 +45,7 @@ def read(filename, callback=None) -> Tuple[str, str]:
                 lines_buffer.append(line)
 
         if lines_buffer:
-            yield lines_buffer[0], ''.join(lines_buffer[1:])
+            yield Protein(lines_buffer[0], ''.join(lines_buffer[1:]))
+
             if handle_callback():
                 raise ReadCancelledError

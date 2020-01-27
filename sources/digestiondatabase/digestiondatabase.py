@@ -6,10 +6,11 @@ from time import time
 from typing import List, Tuple, Union, Iterator, Callable, Optional
 
 from digestiondatabase import digester, fastareader
+from .aminoacidsequence import AminoAcidSequence
+from .peptide import Peptide
+from .protein import Protein
 
 DigestionSettings = namedtuple('DigestionSettings', ('enzyme', 'missed_cleavages'))
-Protein = namedtuple('Protein', ('id', 'name', 'sequence'))
-Peptide = namedtuple('Peptide', ('id', 'sequence', 'missed_cleavages', 'is_unique'))
 DigestionTables = namedtuple('DigestionTables', ('peptides_table', 'peptides_association'))
 
 
@@ -32,23 +33,19 @@ class DigestionDatabase:
         self._maximum_task_iteration = 0
         self._current_task = ''
         self._progress_handler_function: Optional[Callable] = None
+        self._path = Path(database_path)
 
-        path = Path(database_path)
-
-        if path.exists() and path.is_file():
+        if self._path.exists() and self._path.is_file():
             if create:
                 if overwrite:
-                    Path(database_path).unlink()
+                    Path(self._path).unlink()
                 else:
                     raise FileExistsError
-
         elif not create:
             raise FileNotFoundError
 
-        self._path = database_path
-
         try:
-            self._connection = sqlite3.connect(str(database_path))
+            self._connection = sqlite3.connect(str(self._path))
         except sqlite3.OperationalError:
             raise IOError
 
@@ -105,16 +102,16 @@ class DigestionDatabase:
     def path(self) -> Path:
         return self._path
 
-    def _digestion_tables(self, enzyme: str, missed_cleavages: int) -> DigestionTables:
+    def _digestion_tables(self, digestion: DigestionSettings) -> DigestionTables:
         if not self._connection:
             raise RuntimeError('No database is opened')
 
-        if DigestionSettings(enzyme, missed_cleavages) not in self.available_digestions:
+        if digestion not in self.available_digestions:
             raise DigestionDoesntExistError('Digestion doesn\'t exist')
 
         cursor = self._connection.execute('''SELECT peptides_table FROM digestions 
                                              WHERE enzyme = ? AND missed_cleavages = ?''',
-                                          (enzyme, missed_cleavages))
+                                          (digestion.enzyme, digestion.missed_cleavages))
         digestion_tables = cursor.fetchone()['peptides_table']
         return DigestionTables(f'"{digestion_tables}"',
                                f'"{digestion_tables + "_association"}"')
@@ -163,16 +160,17 @@ class DigestionDatabase:
 
         with self._connection:
             try:
-                for i, (name, sequence) in enumerate(fastareader.read(str(filename), handle_callback), start=1):
+                for i, protein in enumerate(fastareader.read(str(filename), handle_callback), start=1):
                     self._connection.execute('INSERT INTO sequences(sequence) VALUES(?) ON CONFLICT DO NOTHING',
-                                             (sequence,))
-                    cursor = self._connection.execute('SELECT id FROM sequences WHERE sequence = ?', (sequence,))
-                    self._connection.execute(
-                        'INSERT INTO proteins(name, sequence_id) VALUES(?, ?) ON CONFLICT DO NOTHING',
-                        (name, cursor.fetchone()['id']))
+                                             (protein.sequence,))
+                    cursor = self._connection.execute('SELECT id FROM sequences WHERE sequence = ?',
+                                                      (protein.sequence,))
+                    self._connection.execute('''INSERT INTO proteins(name, sequence_id) VALUES(?, ?) ON CONFLICT DO
+                                                NOTHING''',
+                                             (protein.name, cursor.fetchone()['id']))
 
                 for digestion in self.available_digestions:
-                    self._digest(digestion.enzyme, digestion.missed_cleavages, callback=callback)
+                    self._digest(digestion, callback=callback)
 
             except sqlite3.OperationalError:
                 # Callbacks has returned a non-null value
@@ -180,9 +178,9 @@ class DigestionDatabase:
             finally:
                 self._end_of_task()
 
-    def add_digestion(self, enzyme, missed_cleavages, callback=None, proteins_per_batch=10000) -> None:
+    def add_digestion(self, digestion, callback=None, proteins_per_batch=10000) -> None:
         # Checks if the digestion already exists
-        if DigestionSettings(enzyme, missed_cleavages) in self.available_digestions:
+        if digestion in self.available_digestions:
             raise DigestionAlreadyExistsError('Digestion already exists')
 
         # Generates a uuid as the table name
@@ -190,10 +188,10 @@ class DigestionDatabase:
 
         # Add this digestion table into the list of digestion
         self._connection.execute('INSERT INTO digestions(enzyme, missed_cleavages, peptides_table) VALUES(?, ?, ?)',
-                                 (enzyme, missed_cleavages, digestion_table_name))
+                                 (digestion.enzyme, digestion.missed_cleavages, digestion_table_name))
 
         # Get the table names (including many-to-many table name)
-        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
+        digestion_tables = self._digestion_tables(digestion)
 
         # Creates all the tables needed to store the digestion result
         with self._connection:
@@ -210,16 +208,16 @@ class DigestionDatabase:
                                              FOREIGN KEY(peptide_id) REFERENCES {digestion_tables.peptides_table}(id),
                                              FOREIGN KEY(sequence_id) REFERENCES sequences(id))''')
 
-                self._digest(enzyme, missed_cleavages, callback=callback, proteins_per_batch=proteins_per_batch)
+                self._digest(digestion, callback=callback, proteins_per_batch=proteins_per_batch)
 
             except sqlite3.OperationalError:
                 self._connection.rollback()
             finally:
                 self._end_of_task()
 
-    def _digest(self, enzyme, missed_cleavages, callback=None, proteins_per_batch=10000):
-        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
-
+    def _digest(self, digestion, callback=None, proteins_per_batch=10000) -> None:
+        digestion_tables = self._digestion_tables(digestion)
+        enzyme = digester.enzyme(digestion.enzyme)
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0
@@ -232,8 +230,8 @@ class DigestionDatabase:
 
         self._maximum_task_iteration = cursor.fetchone()[0]
         self._current_task_iteration = 0
-        self._current_task = (f'Digesting database with {enzyme}, {missed_cleavages} missed cleavage'
-                              f'{"s" if missed_cleavages > 1 else ""}...')
+        self._current_task = (f'Digesting database with {digestion.enzyme}, {digestion.missed_cleavages} '
+                              f'missed cleavage{"s" if digestion.missed_cleavages > 1 else ""}...')
 
         # Nothing to digest, exiting
         if not self._maximum_task_iteration:
@@ -245,48 +243,45 @@ class DigestionDatabase:
                                                     FROM {digestion_tables.peptides_association})''')
 
         rows = read_cursor.fetchmany(proteins_per_batch)
-        cleave_function = digester.cleave
 
         while rows:
-            results = ((row[0], cleave_function(row[1], enzyme, missed_cleavages)) for row in rows)
-
-            for (sequence_id, peptides) in results:
+            for aa_sequence in (AminoAcidSequence(row['sequence'], row['id']) for row in rows):
+                peptides = tuple(enzyme.cleave(aa_sequence, digestion.missed_cleavages))
                 self._connection.executemany(f'''INSERT INTO {digestion_tables.peptides_table}
                                                  (sequence, missed_cleavages) 
                                                  VALUES(?, ?) ON CONFLICT DO NOTHING''',
-                                             peptides)
+                                             ((peptide.sequence, peptide.missed_cleavages) for peptide in peptides))
 
-                # Used to map a peptide sequence to its database id
                 # We need that to preserve the digestion order of peptide when updating the association table
-                peptides_with_id = {}
+                sequences_to_ids = {}
 
                 for i in range(0, len(peptides), 900):
-                    queried_peptides = tuple(peptide[0] for peptide in peptides[i:i + 900])
-                    parameters_substitution = ','.join(('?',) * len(queried_peptides))
+                    queried_peptide_sequences = tuple(peptide.sequence for peptide in peptides[i:i + 900])
+                    parameters_substitution = ','.join(('?',) * len(queried_peptide_sequences))
 
                     cursor = self._connection.execute(f'''SELECT id, sequence FROM {digestion_tables.peptides_table}
                                                           WHERE sequence IN ({parameters_substitution})''',
-                                                      queried_peptides)
+                                                      queried_peptide_sequences)
 
                     # Mapping peptide sequence to its id
-                    peptides_with_id.update({row['sequence']: row['id'] for row in cursor})
+                    sequences_to_ids.update({row['sequence']: row['id'] for row in cursor})
 
                 # Creating a list of ids, sorted by digestion order
-                sorted_peptides_id = (peptides_with_id[peptide[0]] for peptide in peptides)
+                sorted_peptides_id = (sequences_to_ids[peptide.sequence] for peptide in peptides)
 
                 self._connection.executemany(f'''INSERT INTO {digestion_tables.peptides_association}
                                                  (peptide_id, sequence_id) VALUES(?, ?)''',
-                                             ((peptide_id, sequence_id) for peptide_id in sorted_peptides_id))
+                                             ((peptide_id, aa_sequence.id) for peptide_id in sorted_peptides_id))
 
                 self._current_task_iteration += 1
             rows = read_cursor.fetchmany(proteins_per_batch)
 
-    def remove_digestion(self, enzyme: str, missed_cleavages: int, callback: Optional[Callable] = None) -> None:
+    def remove_digestion(self, digestion: DigestionSettings, callback: Optional[Callable] = None) -> None:
         self._progress_handler_function = callback
         self._current_task_iteration = 0
         self._maximum_task_iteration = 0
         self._current_task = 'Removing digestion...'
-        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
+        digestion_tables = self._digestion_tables(digestion)
 
         with self._connection:
             # self._digestion_tables returns table names surrounded by ", we need to remove them in this case
@@ -315,7 +310,7 @@ class DigestionDatabase:
         try:
             cursor = self._connection.execute(sql, ('%' + name.strip() + '%',))
             for i, row in enumerate(cursor, start=1):
-                yield Protein(row['id'], row['name'], row['sequence'])
+                yield Protein(row['name'], row['sequence'], protein_id=row['id'])
 
                 if limit is not None and i + 1 > limit:
                     self._end_of_task()
@@ -341,7 +336,7 @@ class DigestionDatabase:
         try:
             cursor = self._connection.execute(sql, ('%' + sequence.strip().upper() + '%',))
             for i, row in enumerate(cursor, start=1):
-                yield Protein(row['id'], row['name'], row['sequence'])
+                yield Protein(row['name'], row['sequence'], protein_id=row['id'])
 
                 if limit is not None and i + 1 > limit:
                     self._end_of_task()
@@ -353,15 +348,14 @@ class DigestionDatabase:
 
     def search_proteins_by_peptide_id(self,
                                       peptide_id: int,
-                                      enzyme: str,
-                                      missed_cleavages: int,
+                                      digestion: DigestionSettings,
                                       limit: Optional[int] = None,
                                       callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0
         self._current_task = 'Searching proteins by peptide...'
-        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
+        digestion_tables = self._digestion_tables(digestion)
 
         sql = f'''SELECT proteins.id, proteins.name, sequences.sequence FROM {digestion_tables.peptides_association}
                   INNER JOIN sequences ON sequences.id = {digestion_tables.peptides_association}.sequence_id
@@ -371,7 +365,7 @@ class DigestionDatabase:
         try:
             cursor = self._connection.execute(sql, (peptide_id,))
             for i, row in enumerate(cursor, start=1):
-                yield Protein(row['id'], row['name'], row['sequence'])
+                yield Protein(row['name'], row['sequence'], protein_id=row['id'])
 
                 if limit is not None and i + 1 > limit:
                     self._end_of_task()
@@ -383,15 +377,14 @@ class DigestionDatabase:
 
     def search_proteins_by_peptide_sequence(self,
                                             peptide_sequence: str,
-                                            enzyme: str,
-                                            missed_cleavages: int,
+                                            digestion:DigestionSettings,
                                             limit: Optional[int] = None,
                                             callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0
         self._current_task = 'Searching proteins by peptide...'
-        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
+        digestion_tables = self._digestion_tables(digestion)
 
         sql = f'''SELECT proteins.id, proteins.name, sequences.sequence FROM {digestion_tables.peptides_table}
                   INNER JOIN {digestion_tables.peptides_association} ON 
@@ -403,7 +396,7 @@ class DigestionDatabase:
         try:
             cursor = self._connection.execute(sql, (peptide_sequence.strip().upper(),))
             for i, row in enumerate(cursor, start=1):
-                yield Protein(row['id'], row['name'], row['sequence'])
+                yield Protein(row['name'], row['sequence'], protein_id=row['id'])
 
                 if limit is not None and i + 1 > limit:
                     self._end_of_task()
@@ -415,15 +408,14 @@ class DigestionDatabase:
 
     def search_peptides_by_protein_id(self,
                                       protein_id: int,
-                                      enzyme: str,
-                                      missed_cleavages: int,
+                                      digestion:DigestionSettings,
                                       limit: Optional[int] = None,
                                       callback: Optional[Callable] = None) -> Optional[Iterator[Peptide]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0
         self._current_task = 'Searching peptides by protein...'
-        digestion_tables = self._digestion_tables(enzyme, missed_cleavages)
+        digestion_tables = self._digestion_tables(digestion)
 
         sql = f'''SELECT {digestion_tables.peptides_table}.id, {digestion_tables.peptides_table}.sequence,
                   {digestion_tables.peptides_table}.missed_cleavages, NOT EXISTS(
@@ -440,7 +432,10 @@ class DigestionDatabase:
         try:
             cursor = self._connection.execute(sql, (protein_id,))
             for i, row in enumerate(cursor, start=1):
-                yield Peptide(row['id'], row['sequence'], row['missed_cleavages'], bool(row['is_unique']))
+                yield Peptide(row['sequence'],
+                              row['missed_cleavages'],
+                              unique=bool(row['is_unique']),
+                              peptide_id=row['id'])
 
                 if limit is not None and i + 1 > limit:
                     self._end_of_task()
