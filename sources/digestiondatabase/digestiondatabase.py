@@ -232,8 +232,8 @@ class DigestionDatabase:
 
         self._maximum_task_iteration = cursor.fetchone()[0]
         self._current_task_iteration = 0
-        self._current_task = f'''Digesting database with {enzyme}, {missed_cleavages} missed cleavage
-                                 {"s" if missed_cleavages > 1 else ""}...'''
+        self._current_task = (f'Digesting database with {enzyme}, {missed_cleavages} missed cleavage'
+                              f'{"s" if missed_cleavages > 1 else ""}...')
 
         # Nothing to digest, exiting
         if not self._maximum_task_iteration:
@@ -355,7 +355,7 @@ class DigestionDatabase:
                                       peptide_id: int,
                                       enzyme: str,
                                       missed_cleavages: int,
-                                      limit:Optional[int]=None,
+                                      limit: Optional[int] = None,
                                       callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
@@ -385,7 +385,7 @@ class DigestionDatabase:
                                             peptide_sequence: str,
                                             enzyme: str,
                                             missed_cleavages: int,
-                                            limit:Optional[int]=None,
+                                            limit: Optional[int] = None,
                                             callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
