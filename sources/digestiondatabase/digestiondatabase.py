@@ -5,7 +5,7 @@ from pathlib import Path
 from time import time
 from typing import List, Tuple, Union, Iterator, Callable, Optional
 
-from digestiondatabase import digester, fastareader
+from digestiondatabase import enzymescollection, fastareader
 from .aminoacidsequence import AminoAcidSequence
 from .peptide import Peptide
 from .protein import Protein
@@ -118,7 +118,7 @@ class DigestionDatabase:
 
     @property
     def available_digestion_enzymes(self) -> List[str]:
-        return digester.available_enzymes()
+        return enzymescollection.available_enzymes()
 
     @property
     def available_digestions(self) -> Tuple[DigestionSettings]:
@@ -217,7 +217,7 @@ class DigestionDatabase:
 
     def _digest(self, digestion, callback=None, proteins_per_batch=10000) -> None:
         digestion_tables = self._digestion_tables(digestion)
-        enzyme = digester.enzyme(digestion.enzyme)
+        enzyme = enzymescollection.enzyme(digestion.enzyme)
         self._progress_handler_function = callback
         self._maximum_task_iteration = 0
         self._current_task_iteration = 0

@@ -294,7 +294,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
             self.refreshMenusButtonsStatusBar()
 
     def addDigestionActionTriggered(self) -> None:
-        digestion_settings = self._digestion_dialog.run(self._database.available_digestion_enzymes)
+        digestion_settings = self._digestion_dialog.run()
 
         if digestion_settings:
             try:
@@ -314,6 +314,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
             self.refreshMenusButtonsStatusBar()
 
     def workingDigestionMenuActionTriggered(self, action) -> None:
+        print('coucou')
         self.refreshPeptidesTableWidget()
 
     def proteinsSearchPushButtonClicked(self) -> None:

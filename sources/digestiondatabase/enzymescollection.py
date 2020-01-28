@@ -18,7 +18,8 @@ _enzymes = {
     # 'Lys-C': re.compile(r'K(?=[^P])'),
     # 'Lys-C/P': re.compile(r'K'),
     # 'Lys-N': re.compile(r'\w(?=K)'),
-    'Trypsin': Enzyme('Trypsin', 'Cleaves next to K or R, but not before P', r'[KR](?=[^P])')
+    'Trypsin': Enzyme('Trypsin', 'Cleaves next to K or R, but not before P, C-term', r'[KR](?=[^P])'),
+    'Trypsin/P': Enzyme('Trypsin/P', 'Cleaves next to K or R, C-term', r'[KR]')
     # 'Trypsin/P': re.compile(r'[KR]'),
     # 'TrypChymo': re.compile(r'[FLWYKR](?=[^P])')
 }

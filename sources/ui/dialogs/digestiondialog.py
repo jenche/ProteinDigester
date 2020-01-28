@@ -1,19 +1,29 @@
-from typing import Optional, Iterable
+from typing import Optional
 
-from PySide2.QtWidgets import QDialog
+from PySide2.QtWidgets import QDialog, QWidget
 
+from digestiondatabase import enzymescollection
 from digestiondatabase.digestiondatabase import DigestionSettings
 from ui import uibuilder
 
 
 class DigestionDialog(*uibuilder.loadUiType('../ui/digestiondialog.ui')):
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
         self.setupUi(self)
 
-    def run(self, available_enzymes: Iterable[str]) -> Optional[DigestionSettings]:
+    def enzymeComboBoxCurrentTextChanged(self, text: str) -> None:
+        try:
+            enzyme = enzymescollection.enzyme(text)
+        except enzymescollection.InvalidEnzymeError:
+            self.enzymeDescriptionLabel.setText('')
+        else:
+            self.enzymeDescriptionLabel.setText(f'<i>{enzyme.name}: {enzyme.description}</i>')
+
+    def run(self) -> Optional[DigestionSettings]:
         self.enzymeComboBox.clear()
-        for enzyme in available_enzymes:
+
+        for enzyme in enzymescollection.available_enzymes():
             self.enzymeComboBox.addItem(enzyme)
 
         if self.exec() == QDialog.Accepted:

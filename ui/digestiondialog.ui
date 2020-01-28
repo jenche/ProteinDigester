@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
-    <height>141</height>
+    <width>442</width>
+    <height>166</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -37,7 +37,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Missed cleavages</string>
+        <string>Maximum missed cleavages</string>
        </property>
       </widget>
      </item>
@@ -78,6 +78,13 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="enzymeDescriptionLabel">
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;enzyme description&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -125,5 +132,24 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>enzymeComboBox</sender>
+   <signal>currentTextChanged(QString)</signal>
+   <receiver>DigestionDialog</receiver>
+   <slot>enzymeComboBoxCurrentTextChanged(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>371</x>
+     <y>25</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>220</x>
+     <y>82</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <slots>
+  <slot>enzymeComboBoxCurrentTextChanged(QString)</slot>
+ </slots>
 </ui>
