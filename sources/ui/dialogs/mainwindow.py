@@ -166,12 +166,15 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         self.proteinsTableWidget.setSortingEnabled(True)
         self.proteinsTableWidget.resizeColumnToContents(-1)
 
-        if not self.proteinsTableWidget.rowCount():
-            # rowcount == 0 --> no result found, we change the text color to red so that the user is sure the query has
-            # been processed
-            palette = self.proteinsSearchLineEdit.palette()
-            palette.setColor(QPalette.Text, QColor(255, 0, 0))
-            self.proteinsSearchLineEdit.setPalette(palette)
+        # Change search line edit text color to assure the user the search is done
+        palette = self.proteinsSearchLineEdit.palette()
+
+        if self.proteinsTableWidget.rowCount():
+            palette.setColor(QPalette.Text, QColor(0, 180, 0))
+        else:
+            palette.setColor(QPalette.Text, QColor(180, 0, 0))
+
+        self.proteinsSearchLineEdit.setPalette(palette)
 
     def refreshPeptidesTableWidget(self) -> None:
         selected_items = self.proteinsTableWidget.selectedItems()

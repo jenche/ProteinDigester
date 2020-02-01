@@ -345,13 +345,14 @@ class DigestionDatabase:
         self._current_task_iteration = 0
         self._maximum_task_iteration = 0
         self._current_task = 'Searching proteins by name...'
+        search_terms = {search_term.lower() for search_term in name.split()}
 
         sql = f'''SELECT proteins.id, proteins.name, sequences.sequence FROM proteins
                   INNER JOIN sequences ON sequences.id = proteins.sequence_id
-                  WHERE proteins.name LIKE ? ORDER BY proteins.name'''
+                  WHERE ''' + ' AND '.join(['proteins.name LIKE ?'] * len(search_terms))
 
         try:
-            cursor = self._connection.execute(sql, ('%' + name.strip() + '%',))
+            cursor = self._connection.execute(sql, tuple('%' + search_term + '%' for search_term in search_terms))
             for i, row in enumerate(cursor, start=1):
                 yield Protein(row['name'], row['sequence'], protein_id=row['id'])
 
@@ -372,9 +373,9 @@ class DigestionDatabase:
         self._current_task_iteration = 0
         self._current_task = 'Searching proteins by sequence...'
 
-        sql = f'''SELECT proteins.id, proteins.name, sequences.sequence FROM proteins
-                  INNER JOIN sequences ON sequences.id = proteins.sequence_id
-                  WHERE sequences.sequence LIKE ? ORDER BY proteins.name'''
+        sql = '''SELECT proteins.id, proteins.name, sequences.sequence FROM proteins
+                 INNER JOIN sequences ON sequences.id = proteins.sequence_id
+                 WHERE sequences.sequence LIKE ? ORDER BY proteins.name'''
 
         try:
             cursor = self._connection.execute(sql, ('%' + sequence.strip().upper() + '%',))
@@ -469,8 +470,7 @@ class DigestionDatabase:
                   {digestion_tables.peptides_association}.sequence_id = proteins.sequence_id
                   INNER JOIN {digestion_tables.peptides_table} ON 
                   {digestion_tables.peptides_table}.id = {digestion_tables.peptides_association}.peptide_id 
-                  WHERE proteins.id = ? 
-                  ORDER BY {digestion_tables.peptides_association}.rowid'''
+                  WHERE proteins.id = ? ORDER BY {digestion_tables.peptides_association}.rowid'''
 
         try:
             cursor = self._connection.execute(sql, (protein_id,))
