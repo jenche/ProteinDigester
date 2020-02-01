@@ -3,7 +3,7 @@ import uuid
 from collections import namedtuple
 from pathlib import Path
 from time import time
-from typing import List, Tuple, Union, Iterator, Callable, Optional
+from typing import List, Tuple, Union, Iterator, Callable, Optional, Iterable
 
 from digestiondatabase import enzymescollection, fastareader
 from .aminoacidsequence import AminoAcidSequence
@@ -11,7 +11,8 @@ from .peptide import Peptide
 from .protein import Protein
 
 DigestionSettings = namedtuple('DigestionSettings', ('enzyme', 'missed_cleavages'))
-DigestionTables = namedtuple('DigestionTables', ('peptides_table', 'peptides_association'))
+DigestionTables = namedtuple('DigestionTables', ('peptides_table', 'peptides_association',
+                                                 'peptides_table_index', 'peptides_association_index'))
 
 
 class DigestionAlreadyExistsError(Exception):
@@ -114,7 +115,9 @@ class DigestionDatabase:
                                           (digestion.enzyme, digestion.missed_cleavages))
         digestion_tables = cursor.fetchone()['peptides_table']
         return DigestionTables(f'"{digestion_tables}"',
-                               f'"{digestion_tables + "_association"}"')
+                               f'"{digestion_tables + "_association"}"',
+                               f'"{digestion_tables + "_index"}"',
+                               f'"{digestion_tables + "_association_index"}"')
 
     @property
     def available_digestion_enzymes(self) -> List[str]:
@@ -178,42 +181,81 @@ class DigestionDatabase:
             finally:
                 self._end_of_task()
 
-    def add_digestion(self, digestion, callback=None, proteins_per_batch=10000) -> None:
-        # Checks if the digestion already exists
-        if digestion in self.available_digestions:
-            raise DigestionAlreadyExistsError('Digestion already exists')
+    def update_digestion(self,
+                         digestion_settings: Iterable[DigestionSettings],
+                         remove=False,
+                         callback=None,
+                         proteins_per_batch=10000) -> None:
+        available_digestions = set(self.available_digestions)
+        updated_digestions = set(digestion_settings)
+        self._progress_handler_function = callback
+        cleanup_needed = False
 
-        # Generates a uuid as the table name
-        digestion_table_name = uuid.uuid4().hex
+        # Removing unneeded digestions
+        if remove:
+            self._current_task_iteration = 0
+            self._maximum_task_iteration = 0
 
-        # Add this digestion table into the list of digestion
-        self._connection.execute('INSERT INTO digestions(enzyme, missed_cleavages, peptides_table) VALUES(?, ?, ?)',
-                                 (digestion.enzyme, digestion.missed_cleavages, digestion_table_name))
+            with self._connection:
+                for digestion in available_digestions - updated_digestions:
+                    cleanup_needed = True
+                    self._current_task = (f'Removing digestion {digestion.enzyme}, {digestion.missed_cleavages} '
+                                          f'missed cleavage{"s" if digestion.missed_cleavages > 1 else ""}...')
+                    self._progress_handler()
+                    digestion_tables = self._digestion_tables(digestion)
 
-        # Get the table names (including many-to-many table name)
-        digestion_tables = self._digestion_tables(digestion)
+                    try:
+                        # self._digestion_tables returns table names surrounded by ", we need to remove them in this
+                        # case
+                        self._connection.execute('DELETE FROM digestions WHERE peptides_table = ?',
+                                                 (digestion_tables.peptides_table[1:-1],))
+                        self._connection.execute(f'DROP TABLE {digestion_tables.peptides_table}')
+                        self._connection.execute(f'DROP TABLE {digestion_tables.peptides_association}')
+                    except sqlite3.OperationalError:
+                        self._connection.rollback()
+                        self._end_of_task()
+                        return
 
-        # Creates all the tables needed to store the digestion result
+        # Adding digestions
         with self._connection:
-            try:
-                self._connection.execute(f'''CREATE TABLE {digestion_tables.peptides_table}(
-                                             id INTEGER,
-                                             sequence TEXT NOT NULL UNIQUE,
-                                             missed_cleavages INTEGER NOT NULL,
-                                             PRIMARY KEY(id))''')
+            for digestion in updated_digestions - available_digestions:
+                # Generates a uuid as the table name
+                digestion_table_name = uuid.uuid4().hex
 
-                self._connection.execute(f'''CREATE TABLE {digestion_tables.peptides_association}(
-                                             peptide_id INTEGER,
-                                             sequence_id INTEGER,
-                                             FOREIGN KEY(peptide_id) REFERENCES {digestion_tables.peptides_table}(id),
-                                             FOREIGN KEY(sequence_id) REFERENCES sequences(id))''')
+                # Add this digestion table into the list of digestion
+                self._connection.execute('''INSERT INTO digestions(enzyme, missed_cleavages, peptides_table)
+                                            VALUES(?, ?, ?)''',
+                                         (digestion.enzyme, digestion.missed_cleavages, digestion_table_name))
 
-                self._digest(digestion, callback=callback, proteins_per_batch=proteins_per_batch)
+                # Get the table names (including many-to-many table name)
+                digestion_tables = self._digestion_tables(digestion)
 
-            except sqlite3.OperationalError:
-                self._connection.rollback()
-            finally:
-                self._end_of_task()
+                # Creates all the tables needed to store the digestion result
+                try:
+                    self._connection.execute(f'''CREATE TABLE {digestion_tables.peptides_table}(
+                                                 id INTEGER,
+                                                 sequence TEXT NOT NULL UNIQUE,
+                                                 missed_cleavages INTEGER NOT NULL,
+                                                 PRIMARY KEY(id))''')
+
+                    self._connection.execute(f'''CREATE TABLE {digestion_tables.peptides_association}(
+                                                 peptide_id INTEGER,
+                                                 sequence_id INTEGER,
+                                                 FOREIGN KEY(peptide_id) REFERENCES {digestion_tables.peptides_table}(id),
+                                                 FOREIGN KEY(sequence_id) REFERENCES sequences(id))''')
+
+                    self._digest(digestion, callback=callback, proteins_per_batch=proteins_per_batch)
+
+                except sqlite3.OperationalError:
+                    self._connection.rollback()
+                    self._end_of_task()
+                    return
+
+        if cleanup_needed:
+            self._current_task = (f'Cleaning up database...')
+            self._connection.execute('VACUUM')
+
+        self._end_of_task()
 
     def _digest(self, digestion, callback=None, proteins_per_batch=10000) -> None:
         digestion_tables = self._digestion_tables(digestion)
@@ -229,15 +271,21 @@ class DigestionDatabase:
                                                FROM {digestion_tables.peptides_association})''')
 
         self._maximum_task_iteration = cursor.fetchone()[0]
-        self._current_task_iteration = 0
-        self._current_task = (f'Digesting database with {digestion.enzyme}, {digestion.missed_cleavages} '
-                              f'missed cleavage{"s" if digestion.missed_cleavages > 1 else ""}...')
 
         # Nothing to digest, exiting
         if not self._maximum_task_iteration:
             self._end_of_task()
             return
 
+        self._current_task_iteration = 0
+        self._current_task = (f'Digesting database with {digestion.enzyme}, {digestion.missed_cleavages} '
+                              f'missed cleavage{"s" if digestion.missed_cleavages > 1 else ""}...')
+
+        # Dropping the indicies to speed up digestion
+        self._connection.execute(f'DROP INDEX IF EXISTS {digestion_tables.peptides_table_index}')
+        self._connection.execute(f'DROP INDEX IF EXISTS {digestion_tables.peptides_association_index}')
+
+        # Reading sequences to digest...
         read_cursor = self._connection.execute(f'''SELECT id, sequence FROM sequences WHERE sequences.id NOT IN
                                                    (SELECT DISTINCT {digestion_tables.peptides_association}.sequence_id 
                                                     FROM {digestion_tables.peptides_association})''')
@@ -276,23 +324,15 @@ class DigestionDatabase:
                 self._current_task_iteration += 1
             rows = read_cursor.fetchmany(proteins_per_batch)
 
-    def remove_digestion(self, digestion: DigestionSettings, callback: Optional[Callable] = None) -> None:
-        self._progress_handler_function = callback
-        self._current_task_iteration = 0
+        # Creating indicies to speed up search
         self._maximum_task_iteration = 0
-        self._current_task = 'Removing digestion...'
-        digestion_tables = self._digestion_tables(digestion)
-
-        with self._connection:
-            # self._digestion_tables returns table names surrounded by ", we need to remove them in this case
-            self._connection.execute('DELETE FROM digestions WHERE peptides_table = ?',
-                                     (digestion_tables.peptides_table[1:-1],))
-            self._connection.execute(f'DROP TABLE {digestion_tables.peptides_table}')
-            self._connection.execute(f'DROP TABLE {digestion_tables.peptides_association}')
-
-        # VACUUM command is issued to shrink the database
-        self._connection.execute('VACUUM')
-        self._end_of_task()
+        self._current_task_iteration = 0
+        self._current_task = (f'Creating index for digestion {digestion.enzyme}, {digestion.missed_cleavages} '
+                              f'missed cleavage{"s" if digestion.missed_cleavages > 1 else ""}...')
+        self._connection.execute(f'''CREATE INDEX {digestion_tables.peptides_table_index} ON  
+                                     {digestion_tables.peptides_table}(sequence)''')
+        self._connection.execute(f'''CREATE INDEX {digestion_tables.peptides_association_index} ON  
+                                     {digestion_tables.peptides_association}(peptide_id, sequence_id)''')
 
     def search_proteins_by_name(self,
                                 name: str,
@@ -377,7 +417,7 @@ class DigestionDatabase:
 
     def search_proteins_by_peptide_sequence(self,
                                             peptide_sequence: str,
-                                            digestion:DigestionSettings,
+                                            digestion: DigestionSettings,
                                             limit: Optional[int] = None,
                                             callback: Optional[Callable] = None) -> Optional[Iterator[Protein]]:
         self._progress_handler_function = callback
@@ -408,7 +448,7 @@ class DigestionDatabase:
 
     def search_peptides_by_protein_id(self,
                                       protein_id: int,
-                                      digestion:DigestionSettings,
+                                      digestion: DigestionSettings,
                                       limit: Optional[int] = None,
                                       callback: Optional[Callable] = None) -> Optional[Iterator[Peptide]]:
         self._progress_handler_function = callback

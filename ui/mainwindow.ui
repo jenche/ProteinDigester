@@ -262,7 +262,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Peptides&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Peptides from selected protein&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
@@ -360,7 +360,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Proteins&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Proteins from selected peptide&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
@@ -454,7 +454,7 @@
     </property>
     <addaction name="importFastaAction"/>
     <addaction name="separator"/>
-    <addaction name="addDigestionAction"/>
+    <addaction name="manageDigestionAction"/>
    </widget>
    <widget class="QMenu" name="workingDigestionMenu">
     <property name="title">
@@ -502,9 +502,9 @@
     <string>Quit</string>
    </property>
   </action>
-  <action name="addDigestionAction">
+  <action name="manageDigestionAction">
    <property name="text">
-    <string>Add digestion</string>
+    <string>Manage digestion</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
@@ -622,10 +622,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>addDigestionAction</sender>
+   <sender>manageDigestionAction</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
-   <slot>addDigestionActionTriggered()</slot>
+   <slot>manageDigestionActionTriggered()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
@@ -691,7 +691,7 @@
   <slot>importFastaActionTriggered()</slot>
   <slot>openDatabaseActionTriggered()</slot>
   <slot>proteinsSearchPushButtonClicked()</slot>
-  <slot>addDigestionActionTriggered()</slot>
+  <slot>manageDigestionActionTriggered()</slot>
   <slot>proteinsTableWidgetItemSelectionChanged()</slot>
   <slot>peptidesTableWidgetItemSelectionChanged()</slot>
   <slot>workingDigestionMenuActionTriggered(QAction*)</slot>

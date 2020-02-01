@@ -47,15 +47,14 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         # Creating dialogs
         self._digestion_dialog = DigestionDialog(self)
         self._progress_dialog = QProgressDialog(self)
-        self._progress_dialog.setAutoReset(True)
         self._progress_dialog.setAutoClose(True)
         self._progress_dialog.setWindowModality(Qt.WindowModal)
         self._progress_dialog.setMinimumDuration(200)
         self._progress_dialog.reset()
 
-        # Creating menu that can't be created in QT Designer
-        self.removeDigestionMenu = self.databaseMenu.addMenu('Remove digestion')
-        self.removeDigestionMenu.triggered.connect(self.removeDigestionMenuActionTriggered)
+        # Creating an action group used in the working digestion menu
+        self._working_digestion_action_group = QActionGroup(self.workingDigestionMenu)
+        self._working_digestion_action_group.triggered.connect(self.workingDigestionMenuActionTriggered)
 
         # First refresh
         self.refreshMenusButtonsStatusBar()
@@ -91,27 +90,25 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         self.mainSplitterBottomWidget.setVisible(digestions_available)
         self.databaseMenu.setEnabled(database_opened)
         self.workingDigestionMenu.setEnabled(digestions_available)
-        self.removeDigestionMenu.setEnabled(digestions_available)
 
         if digestions_available:
-            current_digestion_settings = None
+            if self._working_digestion_action_group.actions():
+                current_digestion_settings = self._working_digestion_action_group.checkedAction().data()
+            else:
+                current_digestion_settings = None
+
             new_digestion_settings = None
 
-            for action in self.workingDigestionMenu.actions():
-                if action.isChecked():
-                    current_digestion_settings = action.data()
-                    break
-
-            self.removeDigestionMenu.clear()
-            self.workingDigestionMenu.clear()
-            action_group = QActionGroup(self.workingDigestionMenu)
+            for action in self._working_digestion_action_group.actions():
+                self._working_digestion_action_group.removeAction(action)
+                action.deleteLater()
 
             for i, digestion in enumerate(self.database.available_digestions):
                 action_title = (f'{digestion.enzyme} - {digestion.missed_cleavages} missed cleavage'
                                 f'{"s" if digestion.missed_cleavages > 1 else ""}')
 
                 # Adding action to working digestion menu
-                action = QAction(action_title, action_group)
+                action = QAction(action_title, self._working_digestion_action_group)
                 action.setCheckable(True)
                 action.setData(digestion)
                 self.workingDigestionMenu.addAction(action)
@@ -119,11 +116,6 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                 if digestion == current_digestion_settings or not i:
                     new_digestion_settings = digestion
                     action.setChecked(True)
-
-                # Adding action to remove digestion menu
-                action = QAction(action_title, self.removeDigestionMenu)
-                action.setData(digestion)
-                self.removeDigestionMenu.addAction(action)
 
             # Refreshing if needed
             if current_digestion_settings != new_digestion_settings:
@@ -146,11 +138,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                                                                  limit=10000,
                                                                  callback=self._progressCallback)
         elif search_mode == 2:
-            for action in self.workingDigestionMenu.actions():
-                if action.isChecked():
-                    digestion_settings = action.data()
-                    break
-
+            digestion_settings = self._working_digestion_action_group.checkedAction().data()
             results = self._database.search_proteins_by_peptide_sequence(search_text,
                                                                          digestion_settings,
                                                                          limit=10000,
@@ -182,12 +170,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
     def refreshPeptidesTableWidget(self) -> None:
         selected_items = self.proteinsTableWidget.selectedItems()
         selected_protein_id = selected_items[0].data(TableItemDataRole.ROW_OBJECT_ID) if selected_items else None
-        digestion_settings = None
-
-        for action in self.workingDigestionMenu.actions():
-            if action.isChecked():
-                digestion_settings = action.data()
-                break
+        digestion_settings = self._working_digestion_action_group.checkedAction().data()
 
         if selected_protein_id and digestion_settings:
             results = self.database.search_peptides_by_protein_id(selected_protein_id,
@@ -293,15 +276,11 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
             self._database.import_database(fasta_path, callback=self._progressCallback)
             self.refreshMenusButtonsStatusBar()
 
-    def addDigestionActionTriggered(self) -> None:
-        digestion_settings = self._digestion_dialog.run()
+    def manageDigestionActionTriggered(self) -> None:
+        digestion_settings = self._digestion_dialog.run(self._database)
 
-        if digestion_settings:
-            try:
-                self._database.add_digestion(digestion_settings, callback=self._progressCallback)
-            except DigestionAlreadyExistsError:
-                commondialog.errorMessage(self, 'This digestion already exists in the database.')
-
+        if digestion_settings is not None:
+            self._database.update_digestion(digestion_settings, remove=True, callback=self._progressCallback)
             self.refreshMenusButtonsStatusBar()
 
     def removeDigestionMenuActionTriggered(self, action) -> None:
@@ -314,7 +293,6 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
             self.refreshMenusButtonsStatusBar()
 
     def workingDigestionMenuActionTriggered(self, action) -> None:
-        print('coucou')
         self.refreshPeptidesTableWidget()
 
     def proteinsSearchPushButtonClicked(self) -> None:
