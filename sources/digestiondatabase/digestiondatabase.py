@@ -218,7 +218,11 @@ class DigestionDatabase:
 
         # Adding digestions
         with self._connection:
-            for digestion in updated_digestions - available_digestions:
+            added_digestions = list(updated_digestions - available_digestions)
+            added_digestions.sort(key=lambda digestion: digestion.missed_cleavages)
+            added_digestions.sort(key=lambda digestion: digestion.enzyme)
+
+            for digestion in added_digestions:
                 # Generates a uuid as the table name
                 digestion_table_name = uuid.uuid4().hex
 
@@ -274,7 +278,6 @@ class DigestionDatabase:
 
         # Nothing to digest, exiting
         if not self._maximum_task_iteration:
-            self._end_of_task()
             return
 
         self._current_task_iteration = 0

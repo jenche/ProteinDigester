@@ -453,7 +453,6 @@
      <string>Digestion database</string>
     </property>
     <addaction name="importFastaAction"/>
-    <addaction name="separator"/>
     <addaction name="manageDigestionAction"/>
    </widget>
    <widget class="QMenu" name="workingDigestionMenu">
@@ -507,7 +506,7 @@
     <string>Manage digestion</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+D</string>
+    <string>Ctrl+M</string>
    </property>
   </action>
   <action name="removeDigestionAction">
