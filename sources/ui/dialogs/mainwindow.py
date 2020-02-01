@@ -2,8 +2,8 @@ from enum import IntEnum
 from typing import Optional
 
 from PySide2.QtCore import Qt
-from PySide2.QtGui import QGuiApplication
-from PySide2.QtWidgets import QLabel, QProgressDialog, QTableWidgetItem, QHeaderView, QAction, QActionGroup, QMessageBox
+from PySide2.QtGui import QPalette, QColor
+from PySide2.QtWidgets import (QApplication, QLabel, QProgressDialog, QTableWidgetItem, QHeaderView, QAction, QActionGroup, QMessageBox)
 
 from digestiondatabase.digestiondatabase import (DigestionDatabase, DigestionAlreadyExistsError,
                                                  ResultsLimitExceededError)
@@ -71,7 +71,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
             self._progress_dialog.setValue(iteration)
 
             if not iteration:
-                QGuiApplication.processEvents()
+                QApplication.processEvents()
 
             return self._progress_dialog.wasCanceled()
 
@@ -165,6 +165,13 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
         self.proteinsTableWidget.setSortingEnabled(True)
         self.proteinsTableWidget.resizeColumnToContents(-1)
+
+        if not self.proteinsTableWidget.rowCount():
+            # rowcount == 0 --> no result found, we change the text color to red so that the user is sure the query has
+            # been processed
+            palette = self.proteinsSearchLineEdit.palette()
+            palette.setColor(QPalette.Text, QColor(255, 0, 0))
+            self.proteinsSearchLineEdit.setPalette(palette)
 
     def refreshPeptidesTableWidget(self) -> None:
         selected_items = self.proteinsTableWidget.selectedItems()
@@ -294,6 +301,10 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
     def workingDigestionMenuActionTriggered(self, action) -> None:
         self.refreshPeptidesTableWidget()
 
+    def proteinsSearchLineEditTextChanged(self, text):
+        # Sets back text to standard color (in case it was set to red)
+        self.proteinsSearchLineEdit.setPalette(QApplication.style().standardPalette())
+
     def proteinsSearchPushButtonClicked(self) -> None:
         self.refreshProteinsTableWidget()
 
@@ -306,4 +317,4 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
     def aboutActionTriggered(self) -> None:
         QMessageBox.about(self,
                           'About',
-                          f'{QGuiApplication.applicationName()} {QGuiApplication.applicationVersion()}')
+                          f'{QApplication.applicationName()} {QApplication.applicationVersion()}')
