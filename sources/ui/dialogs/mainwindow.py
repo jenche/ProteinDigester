@@ -45,7 +45,6 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         self._database: Optional[DigestionDatabase] = None
 
         # Creating dialogs
-        self._digestion_dialog = DigestionDialog(self)
         self._progress_dialog = QProgressDialog(self)
         self._progress_dialog.setAutoClose(True)
         self._progress_dialog.setWindowModality(Qt.WindowModal)
@@ -277,7 +276,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
             self.refreshMenusButtonsStatusBar()
 
     def manageDigestionActionTriggered(self) -> None:
-        digestion_settings = self._digestion_dialog.run(self._database)
+        digestion_settings = DigestionDialog(self).run(self._database)
 
         if digestion_settings is not None:
             self._database.update_digestion(digestion_settings, remove=True, callback=self._progressCallback)

@@ -16,6 +16,7 @@ class DigestionDialog(*uibuilder.loadUiType('../ui/digestiondialog.ui')):
         header = self.digestionSettingsTableWidget.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
     def _generateDigestionSettings(self):
         digestion_settings = set()
@@ -45,8 +46,11 @@ class DigestionDialog(*uibuilder.loadUiType('../ui/digestiondialog.ui')):
             self.digestionSettingsTableWidget.insertRow(row)
             enzyme_item = QTableWidgetItem(self.enzymeComboBox.currentText())
             missed_cleavages_item = QTableWidgetItem(str(self.missedCleavagesSpinBox.value()))
+            rule_item = QTableWidgetItem(enzymescollection.enzyme(self.enzymeComboBox.currentText()).description)
             self.digestionSettingsTableWidget.setItem(row, 0, enzyme_item)
             self.digestionSettingsTableWidget.setItem(row, 1, missed_cleavages_item)
+            self.digestionSettingsTableWidget.setItem(row, 2, rule_item)
+            self.digestionSettingsTableWidget.selectRow(row)
         else:
             commondialog.errorMessage(self, 'This digestion settings is already listed.')
 
@@ -70,7 +74,7 @@ class DigestionDialog(*uibuilder.loadUiType('../ui/digestiondialog.ui')):
         # Refreshing anzymes combobox
         self.enzymeComboBox.clear()
 
-        for enzyme in database.available_digestion_enzymes:
+        for enzyme in enzymescollection.available_enzymes():
             self.enzymeComboBox.addItem(enzyme)
 
         # Refreshing digestion settings table
@@ -81,8 +85,12 @@ class DigestionDialog(*uibuilder.loadUiType('../ui/digestiondialog.ui')):
             self.digestionSettingsTableWidget.insertRow(i)
             enzyme_item = QTableWidgetItem(digestion.enzyme)
             missed_cleavages_item = QTableWidgetItem(str(digestion.missed_cleavages))
+            rule_item = QTableWidgetItem(enzymescollection.enzyme(digestion.enzyme).description)
             self.digestionSettingsTableWidget.setItem(i, 0, enzyme_item)
             self.digestionSettingsTableWidget.setItem(i, 1, missed_cleavages_item)
+            self.digestionSettingsTableWidget.setItem(i, 2, rule_item)
+
+        self.digestionSettingsTableWidget.setSortingEnabled(True)
 
         if self.exec() == QDialog.Accepted:
             return self._generateDigestionSettings()
