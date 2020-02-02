@@ -52,6 +52,7 @@ class DigestionDialog(*uibuilder.loadUiType('../ui/digestiondialog.ui')):
             self.digestionSettingsTableWidget.setItem(row, 1, missed_cleavages_item)
             self.digestionSettingsTableWidget.setItem(row, 2, rule_item)
             self.digestionSettingsTableWidget.selectRow(row)
+            self.digestionSettingsTableWidget.scrollToItem(enzyme_item)
         else:
             commondialog.errorMessage(self, 'This digestion settings is already listed.')
 
