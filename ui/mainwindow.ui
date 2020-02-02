@@ -157,7 +157,10 @@
          </widget>
         </item>
         <item>
-         <widget class="QTableWidget" name="proteinsTableWidget">
+         <widget class="TableWidget" name="proteinsTableWidget">
+          <property name="contextMenuPolicy">
+           <enum>Qt::DefaultContextMenu</enum>
+          </property>
           <property name="autoScroll">
            <bool>false</bool>
           </property>
@@ -273,7 +276,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QTableWidget" name="peptidesTableWidget">
+             <widget class="TableWidget" name="peptidesTableWidget">
               <property name="autoScroll">
                <bool>false</bool>
               </property>
@@ -374,7 +377,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QTableWidget" name="subProteinsTableWidget">
+             <widget class="TableWidget" name="subProteinsTableWidget">
               <property name="autoScroll">
                <bool>false</bool>
               </property>
@@ -529,6 +532,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TableWidget</class>
+   <extends>QTableWidget</extends>
+   <header>ui/widgets/tablewidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
