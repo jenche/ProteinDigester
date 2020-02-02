@@ -46,7 +46,6 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
         # Creating dialogs
         self._progress_dialog = QProgressDialog(self)
-        self._progress_dialog.setAutoClose(True)
         self._progress_dialog.setWindowModality(Qt.WindowModal)
         self._progress_dialog.setMinimumDuration(200)
         self._progress_dialog.reset()
@@ -62,9 +61,11 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
     def database(self) -> DigestionDatabase:
         return self._database
 
-    def _progressCallback(self, task: str, iteration: int, maximum: int) -> Optional[bool]:
+    def _progressCallback(self, task: str, iteration: int, maximum: int) -> bool:
         if iteration == -1:
+            self._progress_dialog.close()
             self._progress_dialog.reset()
+            return False
         else:
             self._progress_dialog.setLabelText(task)
             self._progress_dialog.setMaximum(maximum)
@@ -85,9 +86,10 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
         database_opened = bool(self._database)
         digestions_available = database_opened and bool(self._database.available_digestions)
+        database_is_coherent = database_opened and bool(self._database.is_coherent_with_enzymes_collection)
         self.mainSplitter.setEnabled(database_opened)
         self.mainSplitterBottomWidget.setVisible(digestions_available)
-        self.databaseMenu.setEnabled(database_opened)
+        self.databaseMenu.setEnabled(database_opened and database_is_coherent)
         self.workingDigestionMenu.setEnabled(digestions_available)
 
         if digestions_available:
@@ -276,6 +278,13 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
             self._database.close()
 
         self._database = DigestionDatabase(database_path)
+
+        if not self._database.is_coherent_with_enzymes_collection:
+            commondialog.informationMessage(self, 'This database includes digestions done with enzymes that have '
+                                                  'been removed or modified in the enzymes files.\n'
+                                                  'Since this can lead to incoherent results, the import FASTA and '
+                                                  'manage database functions will be disabled.')
+
         self.refreshMenusButtonsStatusBar()
 
     def importFastaActionTriggered(self) -> None:

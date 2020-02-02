@@ -1,28 +1,52 @@
-from typing import List
+from configparser import ConfigParser, DuplicateSectionError, DuplicateOptionError
+from pathlib import Path
+from typing import List, Union
 
 from .enzyme import Enzyme
+
+
+class InvalidEnzymeFileError(Exception):
+    pass
 
 
 class InvalidEnzymeError(Exception):
     pass
 
 
-_enzymes = {
-    # 'Arg-C': re.compile(r'R'),
-    # 'Asp-C': re.compile(r'\w(?=[BD])'),
-    # 'Asp-N_ambic': re.compile(r'\w(?=[DE])'),
-    # 'Chymotrypsin': re.compile(r'([FLYW](?=[^P]))'),
-    # 'CNbr': re.compile(r'M'),
-    # 'CNbr+Trypsin': re.compile(r'(M)|([KR](?=[^P]))'),
-    # 'Formic acid': re.compile(r'D'),
-    # 'Lys-C': re.compile(r'K(?=[^P])'),
-    # 'Lys-C/P': re.compile(r'K'),
-    # 'Lys-N': re.compile(r'\w(?=K)'),
-    'Trypsin': Enzyme('Trypsin', 'Cleaves next to K or R, but not before P, C-term', r'[KR](?=[^P])'),
-    'Trypsin/P': Enzyme('Trypsin/P', 'Cleaves next to K or R, C-term', r'[KR]')
-    # 'Trypsin/P': re.compile(r'[KR]'),
-    # 'TrypChymo': re.compile(r'[FLWYKR](?=[^P])')
-}
+_enzymes = {}
+
+
+def load_from_file(filename: Union[str, Path]):
+    global _enzymes
+    enzyme_file = ConfigParser()
+    enzymes = {}
+
+    filepath = Path(filename)
+    if not filepath.exists():
+        raise FileNotFoundError
+
+    try:
+        enzyme_file.read(filename)
+    except DuplicateSectionError:
+        raise InvalidEnzymeFileError(f'Some enzymes have the same name.')
+    except DuplicateOptionError:
+        raise InvalidEnzymeFileError(f'Some enzymes have more than one rule or description.')
+
+    for section in enzyme_file.sections():
+        name = section
+        try:
+            rule = enzyme_file[section]['rule']
+        except KeyError:
+            raise InvalidEnzymeFileError(f'Missing rule for enzyme {name}.')
+
+        try:
+            description = enzyme_file[section]['description']
+        except KeyError:
+            raise InvalidEnzymeFileError(f'Missing description for enzyme {name}.')
+
+        enzymes[name] = Enzyme(name, description, rule)
+
+    _enzymes = {key: enzymes[key] for key in sorted(enzymes.keys())}
 
 
 def available_enzymes() -> List[str]:

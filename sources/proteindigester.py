@@ -7,8 +7,9 @@ from PySide2.QtWidgets import QApplication, QStyle, QDesktopWidget
 
 from ui.dialogs import commondialog
 from ui.dialogs.mainwindow import MainWindow
+from digestiondatabase import enzymescollection
 
-APP_NAME = 'Protein Digester'
+APP_NAME = 'ProteinDigester'
 APP_VERSION = 0.1
 
 
@@ -17,6 +18,7 @@ class Application(QApplication):
         super().__init__()
         self._mainwindow = None
         self._debug_mode = False
+        self._initialized = False
 
         self.aboutToQuit.connect(self._uninitialize)
         self.setApplicationVersion(str(APP_VERSION))
@@ -41,8 +43,17 @@ class Application(QApplication):
                                                         Qt.AlignCenter,
                                                         self._mainwindow.size(),
                                                         QDesktopWidget().availableGeometry(self._mainwindow)))
-
         self._mainwindow.show()
+
+        # Loading enzymes
+        try:
+            enzymescollection.load_from_file('enzymes.ini')
+        except FileNotFoundError:
+            commondialog.errorMessage(None, 'Enzymes file enzymes.ini was not found.')
+        except enzymescollection.InvalidEnzymeFileError as exception:
+            commondialog.errorMessage(None, f'File enzymes.ini is invalid.\n{exception}')
+        else:
+            self._initialized = True
 
     def _exceptionOccured(self, etype, value, trace) -> None:
         commondialog.detailedErrorMessage(self._mainwindow,
@@ -56,6 +67,10 @@ class Application(QApplication):
     def mainWindow(self) -> MainWindow:
         return self._mainwindow
 
+    def exec(self):
+        if self._initialized:
+            self.exec_()
+
 
 if __name__ == '__main__':
-    application = Application(sys.argv).exec_()
+    application = Application(sys.argv).exec()

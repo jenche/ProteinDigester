@@ -3,7 +3,7 @@ import uuid
 from collections import namedtuple
 from pathlib import Path
 from time import time
-from typing import List, Tuple, Union, Iterator, Callable, Optional, Iterable
+from typing import Tuple, Union, Iterator, Callable, Optional, Iterable
 
 from digestiondatabase import enzymescollection, fastareader
 from .aminoacidsequence import AminoAcidSequence
@@ -24,6 +24,10 @@ class DigestionDoesntExistError(Exception):
 
 
 class ResultsLimitExceededError(Exception):
+    pass
+
+
+class IncoherencyWithEnzymesCollectionError(Exception):
     pass
 
 
@@ -71,6 +75,7 @@ class DigestionDatabase:
 
                 self._connection.execute('''CREATE TABLE digestions(
                                             enzyme TEXT NOT NULL,
+                                            rule TEXT NOT NULL,
                                             missed_cleavages INTEGER NOT NULL,
                                             peptides_table TEXT NOT NULL)''')
 
@@ -100,6 +105,19 @@ class DigestionDatabase:
         self._path = None
 
     @property
+    def is_coherent_with_enzymes_collection(self) -> bool:
+        # Checks that the enzymes used in the database still exist in the collections and that the rules used in
+        # the database are the same than the ones in the collection
+        available_enzymes = enzymescollection.available_enzymes()
+        cursor = self._connection.execute('SELECT enzyme, rule FROM digestions')
+
+        for row in cursor:
+            if row['enzyme'] not in available_enzymes or row['rule'] != enzymescollection.enzyme(row['enzyme']).rule:
+                return False
+
+        return True
+
+    @property
     def path(self) -> Path:
         return self._path
 
@@ -118,10 +136,6 @@ class DigestionDatabase:
                                f'"{digestion_tables + "_association"}"',
                                f'"{digestion_tables + "_index"}"',
                                f'"{digestion_tables + "_association_index"}"')
-
-    @property
-    def available_digestion_enzymes(self) -> List[str]:
-        return enzymescollection.available_enzymes()
 
     @property
     def available_digestions(self) -> Tuple[DigestionSettings]:
@@ -158,6 +172,9 @@ class DigestionDatabase:
         if not self._connection:
             raise RuntimeError('No database is opened')
 
+        if not self.is_coherent_with_enzymes_collection:
+            raise IncoherencyWithEnzymesCollectionError
+
         self._current_task = 'Importing FASTA file...'
         self._progress_handler_function = callback
 
@@ -176,7 +193,7 @@ class DigestionDatabase:
                     self._digest(digestion, callback=callback)
 
             except sqlite3.OperationalError:
-                # Callbacks has returned a non-null value
+                # Callback has returned a non-null value
                 self._connection.rollback()
             finally:
                 self._end_of_task()
@@ -190,6 +207,9 @@ class DigestionDatabase:
         updated_digestions = set(digestion_settings)
         self._progress_handler_function = callback
         cleanup_needed = False
+
+        if not self.is_coherent_with_enzymes_collection:
+            raise IncoherencyWithEnzymesCollectionError
 
         # Removing unneeded digestions
         if remove:
@@ -227,9 +247,10 @@ class DigestionDatabase:
                 digestion_table_name = uuid.uuid4().hex
 
                 # Add this digestion table into the list of digestion
-                self._connection.execute('''INSERT INTO digestions(enzyme, missed_cleavages, peptides_table)
-                                            VALUES(?, ?, ?)''',
-                                         (digestion.enzyme, digestion.missed_cleavages, digestion_table_name))
+                enzyme = enzymescollection.enzyme(digestion.enzyme)
+                self._connection.execute('''INSERT INTO digestions(enzyme, rule, missed_cleavages, peptides_table)
+                                            VALUES(?, ?, ?, ?)''',
+                                         (enzyme.name, enzyme.rule, digestion.missed_cleavages, digestion_table_name))
 
                 # Get the table names (including many-to-many table name)
                 digestion_tables = self._digestion_tables(digestion)
@@ -360,7 +381,7 @@ class DigestionDatabase:
                     self._end_of_task()
                     raise ResultsLimitExceededError
         except sqlite3.OperationalError:
-            pass
+            raise
 
         self._end_of_task()
 
