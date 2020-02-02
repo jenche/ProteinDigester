@@ -6,7 +6,7 @@ ProteinDigester has not been packaged yet. To run it, you'll need Python (>=3.7)
 - Launch ProteinDigester
 - Create a digestion database (Ctrl+N)
 - Import a FASTA file (Ctrl+I)
-- Add a digestion (Ctrl+A)
+- Add a digestion (Ctrl+M)
 
 You can add more than one digestion. If you do so, you can select the current digestion using the "Working digestion" menu.
 
