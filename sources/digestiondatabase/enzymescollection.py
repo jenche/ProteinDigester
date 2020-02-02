@@ -2,7 +2,7 @@ from configparser import ConfigParser, DuplicateSectionError, DuplicateOptionErr
 from pathlib import Path
 from typing import List, Union
 
-from .enzyme import Enzyme
+from .enzyme import Enzyme, InvalidRuleError
 
 
 class InvalidEnzymeFileError(Exception):
@@ -44,7 +44,10 @@ def load_from_file(filename: Union[str, Path]):
         except KeyError:
             raise InvalidEnzymeFileError(f'Missing description for enzyme {name}.')
 
-        enzymes[name] = Enzyme(name, description, rule)
+        try:
+            enzymes[name] = Enzyme(name, description, rule)
+        except InvalidRuleError:
+            raise InvalidEnzymeFileError(f'Invalid rule for enzyme {name}.')
 
     _enzymes = {key: enzymes[key] for key in sorted(enzymes.keys())}
 

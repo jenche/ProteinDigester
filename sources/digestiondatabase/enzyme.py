@@ -5,12 +5,20 @@ from .aminoacidsequence import AminoAcidSequence
 from .peptide import Peptide
 
 
+class InvalidRuleError(Exception):
+    pass
+
+
 class Enzyme:
     def __init__(self, name: str, description: str, rule: str):
         self._name = name
         self._description = description
         self._rule = rule
-        self._cleave_regex = re.compile(rule)
+
+        try:
+            self._cleave_regex = re.compile(rule)
+        except re.error:
+            raise InvalidRuleError
 
     @property
     def name(self) -> str:
