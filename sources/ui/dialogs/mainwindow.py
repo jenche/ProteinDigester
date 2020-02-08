@@ -76,13 +76,17 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
             return self._progress_dialog.wasCanceled()
 
-    def refreshMenusButtonsStatusBar(self) -> None:
+    def refreshMenusButtonsStatusBar(self, reset:bool=False) -> None:
         if not self._database:
             self.statusLabel.setText('No database opened')
         else:
             protein = f'{self._database.proteins_count} protein{"s" if self._database.proteins_count > 1 else ""}'
             sequence = f'{self._database.sequences_count} sequence{"s" if self._database.sequences_count > 1 else ""}'
             self.statusLabel.setText(', '.join((str(self._database.path), protein, sequence)))
+
+        if reset:
+            self.proteinsSearchLineEdit.setText('')
+            self.proteinsTableWidget.setRowCount(0)
 
         database_opened = bool(self._database)
         digestions_available = database_opened and bool(self._database.available_digestions)
@@ -266,7 +270,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
 
             self._database = DigestionDatabase(database_path, True, True)
 
-        self.refreshMenusButtonsStatusBar()
+        self.refreshMenusButtonsStatusBar(reset=True)
 
     def openDatabaseActionTriggered(self) -> None:
         database_path = commondialog.fileOpenDialog(self, 'Loading a database', filter='Digest database (*.digestdb)')
@@ -285,7 +289,7 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
                                                   'Since this can lead to incoherent results, the import FASTA and '
                                                   'manage database functions will be disabled.')
 
-        self.refreshMenusButtonsStatusBar()
+        self.refreshMenusButtonsStatusBar(reset=True)
 
     def importFastaActionTriggered(self) -> None:
         fasta_path = commondialog.fileOpenDialog(self, 'Importing a FASTA file', filter='FASTA database(*.fasta)')
