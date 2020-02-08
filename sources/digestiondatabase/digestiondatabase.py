@@ -153,16 +153,18 @@ class DigestionDatabase:
         if not self._connection:
             raise RuntimeError('No database is opened')
 
-        cursor = self._connection.execute('SELECT COUNT(*) FROM proteins')
-        return cursor.fetchone()[0]
+        cursor = self._connection.execute('SELECT id FROM proteins ORDER BY id DESC LIMIT 1')
+        row = cursor.fetchone()
+        return row['id'] if row else 0
 
     @property
     def sequences_count(self) -> int:
         if not self._connection:
             raise RuntimeError('No database is opened')
 
-        cursor = self._connection.execute('SELECT COUNT(*) FROM sequences')
-        return cursor.fetchone()[0]
+        cursor = self._connection.execute('SELECT id FROM sequences ORDER BY id DESC LIMIT 1')
+        row = cursor.fetchone()
+        return row['id'] if row else 0
 
     def import_database(self, filename: Union[Path, str], callback=None) -> None:
         def handle_callback(progress, maximum):
