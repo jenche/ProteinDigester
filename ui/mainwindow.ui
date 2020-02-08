@@ -719,6 +719,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>proteinsTableWidget</sender>
+   <signal>itemDoubleClicked(QTableWidgetItem*)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>refreshPeptidesTableWidget()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>611</x>
+     <y>268</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>611</x>
+     <y>344</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>peptidesTableWidget</sender>
+   <signal>itemDoubleClicked(QTableWidgetItem*)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>refreshSubProteinsTableWidget()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>308</x>
+     <y>562</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>611</x>
+     <y>344</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>createDatabaseActionTriggered()</slot>
@@ -731,5 +763,7 @@
   <slot>workingDigestionMenuActionTriggered(QAction*)</slot>
   <slot>aboutActionTriggered()</slot>
   <slot>proteinsSearchLineEditTextChanged(QString)</slot>
+  <slot>refreshPeptidesTableWidget()</slot>
+  <slot>refreshSubProteinsTableWidget()</slot>
  </slots>
 </ui>

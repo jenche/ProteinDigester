@@ -325,10 +325,10 @@ class MainWindow(*uibuilder.loadUiType('../ui/mainwindow.ui')):
         self.refreshProteinsTableWidget()
 
     def proteinsTableWidgetItemSelectionChanged(self) -> None:
-        self.refreshPeptidesTableWidget()
+        self.peptidesTableWidget.setRowCount(0)
 
     def peptidesTableWidgetItemSelectionChanged(self) -> None:
-        self.refreshSubProteinsTableWidget()
+        self.subProteinsTableWidget.setRowCount(0)
 
     def aboutActionTriggered(self) -> None:
         QMessageBox.about(self,
