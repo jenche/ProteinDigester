@@ -3,12 +3,12 @@
 # Form implementation generated from reading ui file 'digestiondialog.ui',
 # licensing of 'digestiondialog.ui' applies.
 #
-# Created: Sun Feb  9 14:29:40 2020
+# Created: Sun Feb  9 15:23:28 2020
 #      by: pyside2-uic  running on PySide2 5.13.2
 #
 # WARNING! All changes made in this file will be lost!
 
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtWidgets
 
 class Ui_DigestionDialog(object):
     def setupUi(self, DigestionDialog):
