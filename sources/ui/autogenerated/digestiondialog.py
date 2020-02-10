@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file 'digestiondialog.ui',
 # licensing of 'digestiondialog.ui' applies.
 #
-# Created: Sun Feb  9 15:23:28 2020
+# Created: Mon Feb 10 21:00:49 2020
 #      by: pyside2-uic  running on PySide2 5.13.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -90,6 +90,8 @@ class Ui_DigestionDialog(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.digestionSettingsTableWidget.sizePolicy().hasHeightForWidth())
         self.digestionSettingsTableWidget.setSizePolicy(sizePolicy)
+        self.digestionSettingsTableWidget.setStyleSheet(
+            "QTableView:!active  {selection-color: palette(Highlighted-Text); selection-background-color: palette(Highlight);}")
         self.digestionSettingsTableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.digestionSettingsTableWidget.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         self.digestionSettingsTableWidget.setAutoScroll(False)

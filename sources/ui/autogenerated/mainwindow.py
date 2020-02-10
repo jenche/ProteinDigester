@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file 'mainwindow.ui',
 # licensing of 'mainwindow.ui' applies.
 #
-# Created: Sun Feb  9 14:29:56 2020
+# Created: Mon Feb 10 21:08:55 2020
 #      by: pyside2-uic  running on PySide2 5.13.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -88,6 +88,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addWidget(self.proteinsSearchWidget)
         self.proteinsTableWidget = TableWidget(self.mainSplitterTopWidget)
         self.proteinsTableWidget.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
+        self.proteinsTableWidget.setStyleSheet(
+            "QTableView:!active  {selection-color: palette(Highlighted-Text); selection-background-color: palette(Highlight);}")
         self.proteinsTableWidget.setAutoScroll(False)
         self.proteinsTableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.proteinsTableWidget.setAlternatingRowColors(True)
@@ -138,6 +140,8 @@ class Ui_MainWindow(object):
         self.peptideTitleLabel.setObjectName("peptideTitleLabel")
         self.verticalLayout.addWidget(self.peptideTitleLabel)
         self.peptidesTableWidget = TableWidget(self.subSplitterLeftWidget)
+        self.peptidesTableWidget.setStyleSheet(
+            "QTableView:!active  {selection-color: palette(Highlighted-Text); selection-background-color: palette(Highlight);}")
         self.peptidesTableWidget.setAutoScroll(False)
         self.peptidesTableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.peptidesTableWidget.setAlternatingRowColors(True)
@@ -182,6 +186,8 @@ class Ui_MainWindow(object):
         self.subProteinsTitleLabel.setObjectName("subProteinsTitleLabel")
         self.verticalLayout_5.addWidget(self.subProteinsTitleLabel)
         self.subProteinsTableWidget = TableWidget(self.subSplitterRightWidget)
+        self.subProteinsTableWidget.setStyleSheet(
+            "QTableView:!active  {selection-color: palette(Highlighted-Text); selection-background-color: palette(Highlight);}")
         self.subProteinsTableWidget.setAutoScroll(False)
         self.subProteinsTableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.subProteinsTableWidget.setAlternatingRowColors(True)
@@ -299,4 +305,3 @@ class Ui_MainWindow(object):
         self.aboutAction.setText(QtWidgets.QApplication.translate("MainWindow", "About ProteinDigester", None, -1))
 
 from ui.widgets.tablewidget import TableWidget
-from . import resources_rc

@@ -158,19 +158,24 @@
         </item>
         <item>
          <widget class="TableWidget" name="proteinsTableWidget">
-          <property name="contextMenuPolicy">
-           <enum>Qt::DefaultContextMenu</enum>
-          </property>
-          <property name="autoScroll">
-           <bool>false</bool>
-          </property>
-          <property name="editTriggers">
-           <set>QAbstractItemView::NoEditTriggers</set>
-          </property>
-          <property name="alternatingRowColors">
-           <bool>true</bool>
-          </property>
-          <property name="selectionMode">
+             <property name="contextMenuPolicy">
+                 <enum>Qt::DefaultContextMenu</enum>
+             </property>
+             <property name="styleSheet">
+                 <string notr="true">QTableView:!active {selection-color: palette(Highlighted-Text);
+                     selection-background-color: palette(Highlight);}
+                 </string>
+             </property>
+             <property name="autoScroll">
+                 <bool>false</bool>
+             </property>
+             <property name="editTriggers">
+                 <set>QAbstractItemView::NoEditTriggers</set>
+             </property>
+             <property name="alternatingRowColors">
+                 <bool>true</bool>
+             </property>
+             <property name="selectionMode">
            <enum>QAbstractItemView::SingleSelection</enum>
           </property>
           <property name="selectionBehavior">
@@ -276,17 +281,22 @@
              </widget>
             </item>
             <item>
-             <widget class="TableWidget" name="peptidesTableWidget">
-              <property name="autoScroll">
-               <bool>false</bool>
-              </property>
-              <property name="editTriggers">
-               <set>QAbstractItemView::NoEditTriggers</set>
-              </property>
-              <property name="alternatingRowColors">
-               <bool>true</bool>
-              </property>
-              <property name="selectionMode">
+                <widget class="TableWidget" name="peptidesTableWidget">
+                    <property name="styleSheet">
+                        <string notr="true">QTableView:!active {selection-color: palette(Highlighted-Text);
+                            selection-background-color: palette(Highlight);}
+                        </string>
+                    </property>
+                    <property name="autoScroll">
+                        <bool>false</bool>
+                    </property>
+                    <property name="editTriggers">
+                        <set>QAbstractItemView::NoEditTriggers</set>
+                    </property>
+                    <property name="alternatingRowColors">
+                        <bool>true</bool>
+                    </property>
+                    <property name="selectionMode">
                <enum>QAbstractItemView::SingleSelection</enum>
               </property>
               <property name="selectionBehavior">
@@ -377,17 +387,22 @@
              </widget>
             </item>
             <item>
-             <widget class="TableWidget" name="subProteinsTableWidget">
-              <property name="autoScroll">
-               <bool>false</bool>
-              </property>
-              <property name="editTriggers">
-               <set>QAbstractItemView::NoEditTriggers</set>
-              </property>
-              <property name="alternatingRowColors">
-               <bool>true</bool>
-              </property>
-              <property name="selectionMode">
+                <widget class="TableWidget" name="subProteinsTableWidget">
+                    <property name="styleSheet">
+                        <string notr="true">QTableView:!active {selection-color: palette(Highlighted-Text);
+                            selection-background-color: palette(Highlight);}
+                        </string>
+                    </property>
+                    <property name="autoScroll">
+                        <bool>false</bool>
+                    </property>
+                    <property name="editTriggers">
+                        <set>QAbstractItemView::NoEditTriggers</set>
+                    </property>
+                    <property name="alternatingRowColors">
+                        <bool>true</bool>
+                    </property>
+                    <property name="selectionMode">
                <enum>QAbstractItemView::SingleSelection</enum>
               </property>
               <property name="selectionBehavior">
