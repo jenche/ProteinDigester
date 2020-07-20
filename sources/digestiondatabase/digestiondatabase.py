@@ -504,7 +504,10 @@ class DigestionDatabase:
                   {digestion_tables.peptides_table}.missed_cleavages, NOT EXISTS(
                   SELECT 1 FROM {digestion_tables.peptides_association}
                   WHERE {digestion_tables.peptides_association}.peptide_id = {digestion_tables.peptides_table}.id AND
-                  {digestion_tables.peptides_association}.sequence_id != proteins.sequence_id) AS is_unique FROM proteins
+                  {digestion_tables.peptides_association}.sequence_id != proteins.sequence_id) AS is_digest_unique,
+                  NOT EXISTS(SELECT 1 FROM sequences WHERE {digestion_tables.peptides_association}.sequence_id != sequences.id AND
+                  sequences.sequence LIKE '%' || {digestion_tables.peptides_table}.sequence || '%') AS is_sequence_unique
+                  FROM proteins
                   INNER JOIN {digestion_tables.peptides_association} ON 
                   {digestion_tables.peptides_association}.sequence_id = proteins.sequence_id
                   INNER JOIN {digestion_tables.peptides_table} ON 
@@ -516,13 +519,14 @@ class DigestionDatabase:
             for i, row in enumerate(cursor, start=1):
                 yield Peptide(row['sequence'],
                               row['missed_cleavages'],
-                              unique=bool(row['is_unique']),
+                              digest_unique=bool(row['is_digest_unique']),
+                              sequence_unique=bool(row['is_sequence_unique']),
                               peptide_id=row['id'])
 
                 if limit is not None and i + 1 > limit:
                     self._end_of_task()
                     raise ResultsLimitExceededError
         except sqlite3.OperationalError:
-            pass
+            raise
 
         self._end_of_task()

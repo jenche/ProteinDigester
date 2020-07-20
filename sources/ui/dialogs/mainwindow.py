@@ -52,6 +52,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
 
         header = self.subProteinsTableWidget.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
@@ -221,11 +222,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 index_item.setData(TableItemDataRole.ROW_OBJECT_ID, peptide.id)
                 sequence_item = QTableWidgetItem(peptide.sequence)
                 missed_cleavages_item = QTableWidgetItem(str(peptide.missed_cleavages))
-                unique_item = QTableWidgetItem('Yes' if peptide.unique else 'No')
+                digest_unique_item = QTableWidgetItem('Yes' if peptide.digest_unique else 'No')
+                sequence_unique_item = QTableWidgetItem('Yes' if peptide.sequence_unique else 'No')
                 self.peptidesTableWidget.setItem(i, 0, index_item)
                 self.peptidesTableWidget.setItem(i, 1, sequence_item)
                 self.peptidesTableWidget.setItem(i, 2, missed_cleavages_item)
-                self.peptidesTableWidget.setItem(i, 3, unique_item)
+                self.peptidesTableWidget.setItem(i, 3, digest_unique_item)
+                self.peptidesTableWidget.setItem(i, 4, sequence_unique_item)
 
         except ResultsLimitExceededError:
             commondialog.informationMessage(self,

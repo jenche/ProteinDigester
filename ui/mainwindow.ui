@@ -176,16 +176,16 @@
                  <bool>true</bool>
              </property>
              <property name="selectionMode">
-           <enum>QAbstractItemView::SingleSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="verticalScrollMode">
-           <enum>QAbstractItemView::ScrollPerPixel</enum>
-          </property>
-          <property name="horizontalScrollMode">
-           <enum>QAbstractItemView::ScrollPerPixel</enum>
+                 <enum>QAbstractItemView::SingleSelection</enum>
+             </property>
+             <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="verticalScrollMode">
+                 <enum>QAbstractItemView::ScrollPerPixel</enum>
+             </property>
+             <property name="horizontalScrollMode">
+                 <enum>QAbstractItemView::ScrollPerPixel</enum>
           </property>
           <property name="showGrid">
            <bool>false</bool>
@@ -243,20 +243,23 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QSplitter" name="splitter">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <widget class="QWidget" name="subSplitterLeftWidget" native="true">
-           <layout class="QVBoxLayout" name="verticalLayout">
-            <property name="spacing">
-             <number>6</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
+            <widget class="QSplitter" name="splitter">
+                <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="childrenCollapsible">
+                    <bool>false</bool>
+                </property>
+                <widget class="QWidget" name="subSplitterLeftWidget" native="true">
+                    <layout class="QVBoxLayout" name="verticalLayout">
+                        <property name="spacing">
+                            <number>6</number>
+                        </property>
+                        <property name="leftMargin">
+                            <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                            <number>0</number>
             </property>
             <property name="rightMargin">
              <number>0</number>
@@ -280,33 +283,33 @@
               </property>
              </widget>
             </item>
-            <item>
-                <widget class="TableWidget" name="peptidesTableWidget">
-                    <property name="styleSheet">
-                        <string notr="true">QTableView:!active {selection-color: palette(Highlighted-Text);
-                            selection-background-color: palette(Highlight);}
-                        </string>
-                    </property>
-                    <property name="autoScroll">
-                        <bool>false</bool>
-                    </property>
-                    <property name="editTriggers">
-                        <set>QAbstractItemView::NoEditTriggers</set>
-                    </property>
-                    <property name="alternatingRowColors">
-                        <bool>true</bool>
-                    </property>
-                    <property name="selectionMode">
-               <enum>QAbstractItemView::SingleSelection</enum>
-              </property>
-              <property name="selectionBehavior">
-               <enum>QAbstractItemView::SelectRows</enum>
-              </property>
-              <property name="verticalScrollMode">
-               <enum>QAbstractItemView::ScrollPerPixel</enum>
-              </property>
-              <property name="horizontalScrollMode">
-               <enum>QAbstractItemView::ScrollPerPixel</enum>
+                        <item>
+                            <widget class="TableWidget" name="peptidesTableWidget">
+                                <property name="styleSheet">
+                                    <string notr="true">QTableView:!active {selection-color: palette(Highlighted-Text);
+                                        selection-background-color: palette(Highlight);}
+                                    </string>
+                                </property>
+                                <property name="autoScroll">
+                                    <bool>false</bool>
+                                </property>
+                                <property name="editTriggers">
+                                    <set>QAbstractItemView::NoEditTriggers</set>
+                                </property>
+                                <property name="alternatingRowColors">
+                                    <bool>true</bool>
+                                </property>
+                                <property name="selectionMode">
+                                    <enum>QAbstractItemView::SingleSelection</enum>
+                                </property>
+                                <property name="selectionBehavior">
+                                    <enum>QAbstractItemView::SelectRows</enum>
+                                </property>
+                                <property name="verticalScrollMode">
+                                    <enum>QAbstractItemView::ScrollPerPixel</enum>
+                                </property>
+                                <property name="horizontalScrollMode">
+                                    <enum>QAbstractItemView::ScrollPerPixel</enum>
               </property>
               <property name="showGrid">
                <bool>false</bool>
@@ -333,20 +336,25 @@
               </column>
               <column>
                <property name="text">
-                <string>Sequence</string>
+                   <string>Sequence</string>
                </property>
               </column>
-              <column>
-               <property name="text">
-                <string>Missed cleavages</string>
-               </property>
-              </column>
-              <column>
-               <property name="text">
-                <string>Unique</string>
-               </property>
-              </column>
-             </widget>
+                                <column>
+                                    <property name="text">
+                                        <string>Missed cleavages</string>
+                                    </property>
+                                </column>
+                                <column>
+                                    <property name="text">
+                                        <string>Digest unique</string>
+                                    </property>
+                                </column>
+                                <column>
+                                    <property name="text">
+                                        <string>Sequence unique</string>
+                                    </property>
+                                </column>
+                            </widget>
             </item>
            </layout>
           </widget>
@@ -386,33 +394,33 @@
               </property>
              </widget>
             </item>
-            <item>
-                <widget class="TableWidget" name="subProteinsTableWidget">
-                    <property name="styleSheet">
-                        <string notr="true">QTableView:!active {selection-color: palette(Highlighted-Text);
-                            selection-background-color: palette(Highlight);}
-                        </string>
-                    </property>
-                    <property name="autoScroll">
-                        <bool>false</bool>
-                    </property>
-                    <property name="editTriggers">
-                        <set>QAbstractItemView::NoEditTriggers</set>
-                    </property>
-                    <property name="alternatingRowColors">
-                        <bool>true</bool>
-                    </property>
-                    <property name="selectionMode">
-               <enum>QAbstractItemView::SingleSelection</enum>
-              </property>
-              <property name="selectionBehavior">
-               <enum>QAbstractItemView::SelectRows</enum>
-              </property>
-              <property name="verticalScrollMode">
-               <enum>QAbstractItemView::ScrollPerPixel</enum>
-              </property>
-              <property name="horizontalScrollMode">
-               <enum>QAbstractItemView::ScrollPerPixel</enum>
+               <item>
+                   <widget class="TableWidget" name="subProteinsTableWidget">
+                       <property name="styleSheet">
+                           <string notr="true">QTableView:!active {selection-color: palette(Highlighted-Text);
+                               selection-background-color: palette(Highlight);}
+                           </string>
+                       </property>
+                       <property name="autoScroll">
+                           <bool>false</bool>
+                       </property>
+                       <property name="editTriggers">
+                           <set>QAbstractItemView::NoEditTriggers</set>
+                       </property>
+                       <property name="alternatingRowColors">
+                           <bool>true</bool>
+                       </property>
+                       <property name="selectionMode">
+                           <enum>QAbstractItemView::SingleSelection</enum>
+                       </property>
+                       <property name="selectionBehavior">
+                           <enum>QAbstractItemView::SelectRows</enum>
+                       </property>
+                       <property name="verticalScrollMode">
+                           <enum>QAbstractItemView::ScrollPerPixel</enum>
+                       </property>
+                       <property name="horizontalScrollMode">
+                           <enum>QAbstractItemView::ScrollPerPixel</enum>
               </property>
               <property name="showGrid">
                <bool>false</bool>
