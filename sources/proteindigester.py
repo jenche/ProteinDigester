@@ -26,7 +26,7 @@ from ui.dialogs import commondialog
 from ui.dialogs.mainwindow import MainWindow
 
 APP_NAME = 'ProteinDigester'
-APP_VERSION = 0.1
+APP_VERSION = 0.2
 
 
 class Application(QApplication):
