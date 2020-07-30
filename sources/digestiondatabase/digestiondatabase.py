@@ -527,6 +527,6 @@ class DigestionDatabase:
                     self._end_of_task()
                     raise ResultsLimitExceededError
         except sqlite3.OperationalError:
-            raise
+            pass
 
         self._end_of_task()

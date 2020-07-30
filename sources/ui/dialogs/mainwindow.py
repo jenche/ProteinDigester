@@ -29,7 +29,7 @@ from ui.dialogs.digestiondialog import DigestionDialog
 
 
 class TableItemDataRole(IntEnum):
-    ROW_OBJECT_ID = Qt.UserRole
+    ROW_OBJECT = Qt.UserRole
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -57,6 +57,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         header = self.subProteinsTableWidget.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
         # Variable holding the currently opened database
         self._database: Optional[DigestionDatabase] = None
@@ -175,7 +176,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for i, protein in enumerate(results):
                 self.proteinsTableWidget.insertRow(i)
                 index_item = QTableWidgetItem(str(i + 1).zfill(5))
-                index_item.setData(TableItemDataRole.ROW_OBJECT_ID, protein.id)
+                index_item.setData(TableItemDataRole.ROW_OBJECT, protein)
                 name_item = QTableWidgetItem(protein.name)
                 self.proteinsTableWidget.setItem(i, 0, index_item)
                 self.proteinsTableWidget.setItem(i, 1, name_item)
@@ -201,7 +202,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def refreshPeptidesTableWidget(self) -> None:
         selected_items = self.proteinsTableWidget.selectedItems()
-        selected_protein_id = selected_items[0].data(TableItemDataRole.ROW_OBJECT_ID) if selected_items else None
+        selected_protein = selected_items[0].data(TableItemDataRole.ROW_OBJECT) if selected_items else None
+        selected_protein_id = selected_protein.id if selected_protein else None
         digestion_settings = self._working_digestion_action_group.checkedAction().data()
 
         if selected_protein_id and digestion_settings:
@@ -219,7 +221,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for i, peptide in enumerate(results):
                 self.peptidesTableWidget.insertRow(i)
                 index_item = QTableWidgetItem(str(i + 1).zfill(5))
-                index_item.setData(TableItemDataRole.ROW_OBJECT_ID, peptide.id)
+                index_item.setData(TableItemDataRole.ROW_OBJECT, peptide)
                 sequence_item = QTableWidgetItem(peptide.sequence)
                 missed_cleavages_item = QTableWidgetItem(str(peptide.missed_cleavages))
                 digest_unique_item = QTableWidgetItem('Yes' if peptide.digest_unique else 'No')
@@ -241,36 +243,66 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def refreshSubProteinsTableWidget(self) -> None:
         selected_items = self.peptidesTableWidget.selectedItems()
-        selected_peptide_id = selected_items[0].data(TableItemDataRole.ROW_OBJECT_ID) if selected_items else None
-
-        for action in self.workingDigestionMenu.actions():
-            if action.isChecked():
-                digestion_settings = action.data()
-                break
-
-        if selected_peptide_id:
-            results = self.database.search_proteins_by_peptide_id(selected_peptide_id,
-                                                                  digestion_settings,
-                                                                  limit=10000,
-                                                                  callback=self._progressCallback)
-        else:
-            results = []
+        selected_peptide = selected_items[0].data(TableItemDataRole.ROW_OBJECT) if selected_items else None
+        selected_peptide_id = selected_peptide.id if selected_peptide else None
+        selected_peptide_sequence = selected_peptide.sequence if selected_peptide else None
+        digestion_settings = self._working_digestion_action_group.checkedAction().data()
+        by_id_results_ids_set = set()
+        limit_reached = False
 
         self.subProteinsTableWidget.setRowCount(0)
         self.subProteinsTableWidget.setSortingEnabled(False)
 
+        if selected_peptide_id:
+            by_id_results = self.database.search_proteins_by_peptide_id(selected_peptide_id,
+                                                                        digestion_settings,
+                                                                        limit=10000,
+                                                                        callback=self._progressCallback)
+        else:
+            by_id_results = []
+
         try:
-            for i, protein in enumerate(results):
+            for i, protein in enumerate(by_id_results):
                 self.subProteinsTableWidget.insertRow(i)
                 index_item = QTableWidgetItem(str(i + 1).zfill(5))
-                index_item.setData(TableItemDataRole.ROW_OBJECT_ID, protein.id)
+                index_item.setData(TableItemDataRole.ROW_OBJECT, protein)
                 name_item = QTableWidgetItem(protein.name)
+                origin_item = QTableWidgetItem('by digest')
                 self.subProteinsTableWidget.setItem(i, 0, index_item)
                 self.subProteinsTableWidget.setItem(i, 1, name_item)
+                self.subProteinsTableWidget.setItem(i, 2, origin_item)
+                by_id_results_ids_set.add(protein.id)
 
         except ResultsLimitExceededError:
             commondialog.informationMessage(self,
                                             'Your search returns too much results.\n'
+                                            'Only the 10000 first results will be displayed.',
+                                            dismissable=True)
+            limit_reached = True
+
+        if selected_peptide_sequence and not limit_reached:
+            by_sequence_results = self.database.search_proteins_by_sequence(selected_peptide_sequence,
+                                                                            limit=10000,
+                                                                            callback=self._progressCallback)
+        else:
+            by_sequence_results = []
+
+        try:
+            for i, protein in enumerate((filtered_protein for filtered_protein in by_sequence_results if
+                                         filtered_protein.id not in by_id_results_ids_set),
+                                        start=len(by_id_results_ids_set)):
+                self.subProteinsTableWidget.insertRow(i)
+                index_item = QTableWidgetItem(str(i + 1).zfill(5))
+                index_item.setData(TableItemDataRole.ROW_OBJECT, protein)
+                name_item = QTableWidgetItem(protein.name)
+                origin_item = QTableWidgetItem('by sequence')
+                self.subProteinsTableWidget.setItem(i, 0, index_item)
+                self.subProteinsTableWidget.setItem(i, 1, name_item)
+                self.subProteinsTableWidget.setItem(i, 2, origin_item)
+
+        except ResultsLimitExceededError:
+            commondialog.informationMessage(self,
+                                            'Your search returns too much by_id_results.\n'
                                             'Only the 10000 first results will be displayed.',
                                             dismissable=True)
 

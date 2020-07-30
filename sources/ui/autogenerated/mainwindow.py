@@ -110,6 +110,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.proteinsSearchPushButton)
 
+
         self.verticalLayout_2.addWidget(self.proteinsSearchWidget)
 
         self.proteinsTableWidget = TableWidget(self.mainSplitterTopWidget)
@@ -182,8 +183,8 @@ class Ui_MainWindow(object):
         self.peptidesTableWidget.setHorizontalHeaderItem(4, __qtablewidgetitem6)
         self.peptidesTableWidget.setObjectName(u"peptidesTableWidget")
         self.peptidesTableWidget.setStyleSheet(u"QTableView:!active {selection-color: palette(Highlighted-Text);\n"
-                                               "                            selection-background-color: palette(Highlight);}\n"
-                                               "                        ")
+                                               "                                        selection-background-color: palette(Highlight);}\n"
+                                               "                                    ")
         self.peptidesTableWidget.setAutoScroll(False)
         self.peptidesTableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.peptidesTableWidget.setAlternatingRowColors(True)
@@ -217,16 +218,18 @@ class Ui_MainWindow(object):
         self.verticalLayout_5.addWidget(self.subProteinsTitleLabel)
 
         self.subProteinsTableWidget = TableWidget(self.subSplitterRightWidget)
-        if (self.subProteinsTableWidget.columnCount() < 2):
-            self.subProteinsTableWidget.setColumnCount(2)
+        if (self.subProteinsTableWidget.columnCount() < 3):
+            self.subProteinsTableWidget.setColumnCount(3)
         __qtablewidgetitem7 = QTableWidgetItem()
         self.subProteinsTableWidget.setHorizontalHeaderItem(0, __qtablewidgetitem7)
         __qtablewidgetitem8 = QTableWidgetItem()
         self.subProteinsTableWidget.setHorizontalHeaderItem(1, __qtablewidgetitem8)
+        __qtablewidgetitem9 = QTableWidgetItem()
+        self.subProteinsTableWidget.setHorizontalHeaderItem(2, __qtablewidgetitem9)
         self.subProteinsTableWidget.setObjectName(u"subProteinsTableWidget")
         self.subProteinsTableWidget.setStyleSheet(u"QTableView:!active {selection-color: palette(Highlighted-Text);\n"
-                                                  "                            selection-background-color: palette(Highlight);}\n"
-                                                  "                        ")
+                                                  "                               selection-background-color: palette(Highlight);}\n"
+                                                  "                           ")
         self.subProteinsTableWidget.setAutoScroll(False)
         self.subProteinsTableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.subProteinsTableWidget.setAlternatingRowColors(True)
@@ -297,7 +300,6 @@ class Ui_MainWindow(object):
         self.peptidesTableWidget.itemDoubleClicked.connect(MainWindow.refreshSubProteinsTableWidget)
 
         QMetaObject.connectSlotsByName(MainWindow)
-
     # setupUi
 
     def retranslateUi(self, MainWindow):
@@ -305,20 +307,20 @@ class Ui_MainWindow(object):
         self.createDatabaseAction.setText(QCoreApplication.translate("MainWindow", u"Create digestion database", None))
         # if QT_CONFIG(shortcut)
         self.createDatabaseAction.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+N", None))
-        # endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.openDatabaseAction.setText(QCoreApplication.translate("MainWindow", u"Open digestion database", None))
-        # if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.openDatabaseAction.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+O", None))
-        # endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.importFastaAction.setText(QCoreApplication.translate("MainWindow", u"Import FASTA file", None))
-        # if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.importFastaAction.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+I", None))
-        # endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.quitAction.setText(QCoreApplication.translate("MainWindow", u"Quit", None))
         self.manageDigestionAction.setText(QCoreApplication.translate("MainWindow", u"Manage digestion", None))
-        # if QT_CONFIG(shortcut)
+        #if QT_CONFIG(shortcut)
         self.manageDigestionAction.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+M", None))
-        # endif // QT_CONFIG(shortcut)
+        #endif // QT_CONFIG(shortcut)
         self.removeDigestionAction.setText(QCoreApplication.translate("MainWindow", u"Remove digestion", None))
         self.aboutAction.setText(QCoreApplication.translate("MainWindow", u"About ProteinDigester", None))
         self.proteinsTitleLabel.setText(QCoreApplication.translate("MainWindow",
@@ -327,8 +329,8 @@ class Ui_MainWindow(object):
         self.proteinsSearchLineEdit.setPlaceholderText("")
         self.proteinsSearchTypeComboBox.setItemText(0, QCoreApplication.translate("MainWindow", u"By name", None))
         self.proteinsSearchTypeComboBox.setItemText(1, QCoreApplication.translate("MainWindow", u"By sequence", None))
-        self.proteinsSearchTypeComboBox.setItemText(2, QCoreApplication.translate("MainWindow", u"By digest peptide",
-                                                                                  None))
+        self.proteinsSearchTypeComboBox.setItemText(2,
+                                                    QCoreApplication.translate("MainWindow", u"By digest peptide", None))
 
         ___qtablewidgetitem = self.proteinsTableWidget.horizontalHeaderItem(0)
         ___qtablewidgetitem.setText(QCoreApplication.translate("MainWindow", u"#", None));
@@ -354,8 +356,11 @@ class Ui_MainWindow(object):
         ___qtablewidgetitem7.setText(QCoreApplication.translate("MainWindow", u"#", None));
         ___qtablewidgetitem8 = self.subProteinsTableWidget.horizontalHeaderItem(1)
         ___qtablewidgetitem8.setText(QCoreApplication.translate("MainWindow", u"Name", None));
+        ___qtablewidgetitem9 = self.subProteinsTableWidget.horizontalHeaderItem(2)
+        ___qtablewidgetitem9.setText(QCoreApplication.translate("MainWindow", u"Origin", None));
         self.fileMenu.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.databaseMenu.setTitle(QCoreApplication.translate("MainWindow", u"Digestion database", None))
         self.workingDigestionMenu.setTitle(QCoreApplication.translate("MainWindow", u"Working digestion", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
     # retranslateUi
+
