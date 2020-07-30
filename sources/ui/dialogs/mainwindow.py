@@ -146,11 +146,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def refreshProteinsTableWidget(self) -> None:
         search_text = self.proteinsSearchLineEdit.text().strip()
+        search_mode = self.proteinsSearchTypeComboBox.currentIndex()
 
         if not search_text:
             return
-
-        search_mode = self.proteinsSearchTypeComboBox.currentIndex()
 
         if search_mode == 0:
             results = self._database.search_proteins_by_name(search_text,
@@ -354,15 +353,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if digestion_settings is not None:
             self._database.update_digestion(digestion_settings, remove=True, callback=self._progressCallback)
-            self.refreshMenusButtonsStatusBar()
-
-    def removeDigestionMenuActionTriggered(self, action) -> None:
-        digestion = action.data()
-        if commondialog.questionMessage(self,
-                                        f'Are you sure you want to remove the digestion '
-                                        f'{digestion.enzyme} - {digestion.missed_cleavages} missed cleavages'
-                                        f'{"s" if digestion.missed_cleavages > 1 else ""} ?'):
-            self._database.remove_digestion(digestion, self._progressCallback)
             self.refreshMenusButtonsStatusBar()
 
     def workingDigestionMenuActionTriggered(self, action) -> None:
