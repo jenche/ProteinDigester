@@ -18,15 +18,15 @@ import sys
 import traceback
 from typing import List
 
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication, QStyle, QDesktopWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QStyle
 
 from digestiondatabase import enzymescollection
 from ui.dialogs import commondialog
 from ui.dialogs.mainwindow import MainWindow
 
 APP_NAME = 'ProteinDigester'
-APP_VERSION = 0.2
+APP_VERSION = 0.3
 
 
 class Application(QApplication):
@@ -50,15 +50,12 @@ class Application(QApplication):
         if use_gui_exception:
             sys.excepthook = self._exceptionOccured
 
-        # Deactivating the ? button appearing on every windows
-        self.setAttribute(Qt.AA_DisableWindowContextHelpButton)
-
         # Creating the main window
         self._mainwindow = MainWindow()
         self._mainwindow.setGeometry(QStyle.alignedRect(Qt.LeftToRight,
                                                         Qt.AlignCenter,
                                                         self._mainwindow.size(),
-                                                        QDesktopWidget().availableGeometry(self._mainwindow)))
+                                                        self._mainwindow.screen().availableGeometry()))
         self._mainwindow.show()
 
         # Loading enzymes
@@ -85,7 +82,7 @@ class Application(QApplication):
 
     def exec(self):
         if self._initialized:
-            self.exec_()
+            super().exec()
 
 
 if __name__ == '__main__':

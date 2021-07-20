@@ -213,6 +213,7 @@ class DigestionDatabase:
             except sqlite3.OperationalError:
                 # Callback has returned a non-null value
                 self._connection.rollback()
+
             finally:
                 self._end_of_task()
 

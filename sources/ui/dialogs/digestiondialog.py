@@ -16,7 +16,7 @@
 
 from typing import Optional, Set
 
-from PySide2.QtWidgets import QDialog, QWidget, QTableWidgetItem, QHeaderView
+from PySide6.QtWidgets import QDialog, QWidget, QTableWidgetItem, QHeaderView
 
 from digestiondatabase import enzymescollection
 from digestiondatabase.digestiondatabase import DigestionDatabase, DigestionSettings

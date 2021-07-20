@@ -17,8 +17,8 @@
 from pathlib import Path
 from typing import MutableMapping, Iterable, TypeVar, Optional
 
-from PySide2.QtGui import QIcon
-from PySide2.QtWidgets import QFileDialog, QCheckBox, QWidget, QMessageBox, QApplication
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QFileDialog, QCheckBox, QWidget, QMessageBox, QApplication
 
 T = TypeVar('T')
 

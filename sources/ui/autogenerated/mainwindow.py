@@ -3,15 +3,14 @@
 ################################################################################
 ## Form generated from reading UI file 'mainwindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.15.0
+## Created by: Qt User Interface Compiler version 6.1.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import (QCoreApplication, QMetaObject,
-                            QRect, QSize, Qt, QLocale)
-from PySide2.QtGui import (QIcon)
-from PySide2.QtWidgets import *
+from PySide6.QtCore import *  # type: ignore
+from PySide6.QtGui import *  # type: ignore
+from PySide6.QtWidgets import *  # type: ignore
 
 from ui.widgets.tablewidget import TableWidget
 
@@ -182,9 +181,10 @@ class Ui_MainWindow(object):
         __qtablewidgetitem6 = QTableWidgetItem()
         self.peptidesTableWidget.setHorizontalHeaderItem(4, __qtablewidgetitem6)
         self.peptidesTableWidget.setObjectName(u"peptidesTableWidget")
-        self.peptidesTableWidget.setStyleSheet(u"QTableView:!active {selection-color: palette(Highlighted-Text);\n"
-                                               "                                        selection-background-color: palette(Highlight);}\n"
-                                               "                                    ")
+        self.peptidesTableWidget.setStyleSheet(u"QTableView:!active {selection-color:\n"
+                                               "                                           palette(Highlighted-Text);\n"
+                                               "                                           selection-background-color: palette(Highlight);}\n"
+                                               "                                       ")
         self.peptidesTableWidget.setAutoScroll(False)
         self.peptidesTableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.peptidesTableWidget.setAlternatingRowColors(True)
@@ -320,7 +320,7 @@ class Ui_MainWindow(object):
         self.manageDigestionAction.setText(QCoreApplication.translate("MainWindow", u"Manage digestion", None))
         #if QT_CONFIG(shortcut)
         self.manageDigestionAction.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+M", None))
-        #endif // QT_CONFIG(shortcut)
+        # endif // QT_CONFIG(shortcut)
         self.removeDigestionAction.setText(QCoreApplication.translate("MainWindow", u"Remove digestion", None))
         self.aboutAction.setText(QCoreApplication.translate("MainWindow", u"About ProteinDigester", None))
         self.proteinsTitleLabel.setText(QCoreApplication.translate("MainWindow",
@@ -329,16 +329,17 @@ class Ui_MainWindow(object):
         self.proteinsSearchLineEdit.setPlaceholderText("")
         self.proteinsSearchTypeComboBox.setItemText(0, QCoreApplication.translate("MainWindow", u"By name", None))
         self.proteinsSearchTypeComboBox.setItemText(1, QCoreApplication.translate("MainWindow", u"By sequence", None))
-        self.proteinsSearchTypeComboBox.setItemText(2,
-                                                    QCoreApplication.translate("MainWindow", u"By digest peptide", None))
+        self.proteinsSearchTypeComboBox.setItemText(2, QCoreApplication.translate("MainWindow", u"By digest peptide",
+                                                                                  None))
 
         ___qtablewidgetitem = self.proteinsTableWidget.horizontalHeaderItem(0)
         ___qtablewidgetitem.setText(QCoreApplication.translate("MainWindow", u"#", None));
         ___qtablewidgetitem1 = self.proteinsTableWidget.horizontalHeaderItem(1)
         ___qtablewidgetitem1.setText(QCoreApplication.translate("MainWindow", u"Name", None));
-        self.peptideTitleLabel.setText(QCoreApplication.translate("MainWindow",
-                                                                  u"<html><head/><body><p><span style=\" font-weight:600;\">Peptides from selected protein</span></p></body></html>",
-                                                                  None))
+        self.peptideTitleLabel.setText(
+            QCoreApplication.translate("MainWindow", u"<html><head/><body><p><span style=\"\n"
+                                                     "                                           font-weight:600;\">Peptides from selected protein</span></p></body></html>\n"
+                                                     "                                       ", None))
         ___qtablewidgetitem2 = self.peptidesTableWidget.horizontalHeaderItem(0)
         ___qtablewidgetitem2.setText(QCoreApplication.translate("MainWindow", u"#", None));
         ___qtablewidgetitem3 = self.peptidesTableWidget.horizontalHeaderItem(1)
@@ -350,8 +351,9 @@ class Ui_MainWindow(object):
         ___qtablewidgetitem6 = self.peptidesTableWidget.horizontalHeaderItem(4)
         ___qtablewidgetitem6.setText(QCoreApplication.translate("MainWindow", u"Sequence unique", None));
         self.subProteinsTitleLabel.setText(QCoreApplication.translate("MainWindow",
-                                                                      u"<html><head/><body><p><span style=\" font-weight:600;\">Proteins from selected peptide</span></p></body></html>",
-                                                                      None))
+                                                                      u"<html><head/><body><p><span style=\" font-weight:600;\">Proteins\n"
+                                                                      "                         from selected peptide</span></p></body></html>\n"
+                                                                      "                     ", None))
         ___qtablewidgetitem7 = self.subProteinsTableWidget.horizontalHeaderItem(0)
         ___qtablewidgetitem7.setText(QCoreApplication.translate("MainWindow", u"#", None));
         ___qtablewidgetitem8 = self.subProteinsTableWidget.horizontalHeaderItem(1)

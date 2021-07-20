@@ -16,8 +16,8 @@
 
 from typing import Optional, Iterable
 
-from PySide2.QtCore import QEvent, Qt
-from PySide2.QtWidgets import QApplication, QWidget, QTableWidget, QMenu
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtWidgets import QApplication, QWidget, QTableWidget, QMenu
 
 
 class TableWidget(QTableWidget):
